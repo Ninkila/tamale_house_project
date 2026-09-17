@@ -5,6 +5,8 @@ import pandas as pd
 import streamlit as st
 from src.house_search import find_houses
 
+# TAMALE HOUSE RENTAL SEARCH SYSTEM
+
 # PAGE CONFIGURATION
 st.set_page_config(
     page_title="Tamale House Market",
