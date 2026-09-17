@@ -273,3 +273,6 @@ if submitted:
         st.success(f"🎉 {len(result)} house(s) found!")
         for _, house in result.iterrows():
             display_house_card(house)
+
+
+# LOGIN FEATURE DEVELOPMENT            
