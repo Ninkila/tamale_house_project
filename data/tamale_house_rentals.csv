@@ -1,0 +1,151 @@
+house_id,neighborhood,house_type,rooms,bathrooms,furnishing,distance_from_central_tamale_km,electricity,water,compound,monthly_rent_ghs
+TAM-001,Tishegu,2 Bedroom,3,2,Unfurnished,11.9,Prepaid,Available,Yes,1150
+TAM-002,Nyohini,2 Bedroom,3,2,Unfurnished,11.1,Prepaid,Available,Yes,1400
+TAM-003,Fuo,Chamber and Hall,2,2,Unfurnished,5.1,Prepaid,Available,No,800
+TAM-004,Vittin,Chamber and Hall,2,1,Furnished,7.5,Prepaid,Available,Yes,1300
+TAM-005,Dungu,3 Bedroom,4,3,Unfurnished,6.4,Prepaid,Available,Yes,1700
+TAM-006,Vittin,3 Bedroom,4,3,Unfurnished,10.3,Prepaid,Available,Yes,1950
+TAM-007,Jisonayili,2 Bedroom,3,2,Furnished,13.5,Postpaid,Available,Yes,1650
+TAM-008,Kanvilli,Chamber and Hall,2,1,Unfurnished,12.6,Postpaid,Available,Yes,750
+TAM-009,Lamashegu,Single Room,1,1,Unfurnished,6.5,Postpaid,Available,Yes,550
+TAM-010,Tishegu,2 Bedroom,3,3,Unfurnished,2.3,Prepaid,Available,Yes,1250
+TAM-011,Nyohini,Chamber and Hall,2,2,Unfurnished,6.4,Postpaid,Available,Yes,1000
+TAM-012,Education Ridge,2 Bedroom,3,3,Unfurnished,7.2,Prepaid,Available,Yes,1700
+TAM-013,Dungu,3 Bedroom,4,4,Unfurnished,6.7,Prepaid,Not Available,Yes,1850
+TAM-014,Fuo,2 Bedroom,3,2,Unfurnished,13.2,Postpaid,Available,Yes,1200
+TAM-015,Education Ridge,Chamber and Hall,2,1,Unfurnished,4.2,Prepaid,Available,Yes,1050
+TAM-016,Kanvilli,2 Bedroom,3,3,Unfurnished,4.4,Prepaid,Available,Yes,1200
+TAM-017,Lamashegu,Single Room,1,1,Unfurnished,4.5,Prepaid,Available,Yes,650
+TAM-018,Jisonayili,Chamber and Hall,2,1,Unfurnished,5.8,Prepaid,Available,Yes,850
+TAM-019,Sagnarigu,Single Room,1,1,Semi-Furnished,11.7,Prepaid,Available,Yes,600
+TAM-020,Lamashegu,Single Room,1,1,Unfurnished,10.7,Prepaid,Available,Yes,600
+TAM-021,Vittin,2 Bedroom,3,2,Unfurnished,2.3,Postpaid,Available,No,1400
+TAM-022,Education Ridge,Single Room,1,1,Unfurnished,10.7,Postpaid,Available,Yes,550
+TAM-023,Lamashegu,Single Room,1,1,Unfurnished,13.6,Postpaid,Available,Yes,600
+TAM-024,Dungu,3 Bedroom,4,4,Semi-Furnished,10.0,Postpaid,Available,Yes,2050
+TAM-025,Vittin,Chamber and Hall,2,1,Furnished,14.6,Prepaid,Available,Yes,1150
+TAM-026,Lamashegu,Single Room,1,1,Unfurnished,3.5,Postpaid,Available,Yes,700
+TAM-027,Vittin,2 Bedroom,3,2,Unfurnished,9.3,Prepaid,Not Available,Yes,1400
+TAM-028,Lamashegu,Single Room,1,1,Semi-Furnished,4.9,Postpaid,Available,No,750
+TAM-029,Kanvilli,3 Bedroom,4,3,Semi-Furnished,14.3,Prepaid,Not Available,No,1800
+TAM-030,Kanvilli,Single Room,1,1,Unfurnished,7.8,Prepaid,Not Available,Yes,600
+TAM-031,Nyohini,Single Room,1,1,Unfurnished,10.4,Prepaid,Available,No,550
+TAM-032,Sagnarigu,Chamber and Hall,2,2,Unfurnished,12.3,Prepaid,Available,Yes,950
+TAM-033,Tishegu,Chamber and Hall,2,1,Semi-Furnished,10.1,Postpaid,Not Available,Yes,800
+TAM-034,Tishegu,2 Bedroom,3,2,Unfurnished,3.2,Prepaid,Available,Yes,1200
+TAM-035,Dungu,Single Room,1,1,Unfurnished,8.5,Prepaid,Available,Yes,450
+TAM-036,Dungu,Chamber and Hall,2,1,Semi-Furnished,2.9,Postpaid,Available,Yes,1000
+TAM-037,Nyohini,Chamber and Hall,2,1,Unfurnished,2.1,Prepaid,Available,Yes,950
+TAM-038,Fuo,Single Room,1,1,Unfurnished,8.7,Postpaid,Available,No,450
+TAM-039,Tishegu,2 Bedroom,3,3,Unfurnished,11.2,Prepaid,Available,No,1150
+TAM-040,Fuo,2 Bedroom,3,2,Semi-Furnished,5.8,Prepaid,Available,Yes,1500
+TAM-041,Kanvilli,3 Bedroom,4,4,Unfurnished,1.2,Prepaid,Not Available,Yes,1850
+TAM-042,Dungu,Chamber and Hall,2,1,Unfurnished,10.0,Postpaid,Available,Yes,800
+TAM-043,Lamashegu,3 Bedroom,4,3,Furnished,3.7,Prepaid,Available,Yes,2550
+TAM-044,Fuo,Chamber and Hall,2,1,Semi-Furnished,1.3,Prepaid,Available,Yes,1100
+TAM-045,Jisonayili,2 Bedroom,3,2,Semi-Furnished,11.3,Postpaid,Available,Yes,1550
+TAM-046,Vittin,Chamber and Hall,2,2,Unfurnished,11.9,Postpaid,Not Available,Yes,1100
+TAM-047,Tishegu,2 Bedroom,3,2,Unfurnished,13.6,Prepaid,Available,Yes,1150
+TAM-048,Dungu,Chamber and Hall,2,2,Unfurnished,7.3,Prepaid,Available,Yes,850
+TAM-049,Kanvilli,2 Bedroom,3,2,Semi-Furnished,2.3,Postpaid,Not Available,Yes,1500
+TAM-050,Jisonayili,3 Bedroom,4,3,Semi-Furnished,12.7,Prepaid,Available,Yes,2150
+TAM-051,Fuo,Chamber and Hall,2,1,Semi-Furnished,3.1,Prepaid,Not Available,Yes,1100
+TAM-052,Tishegu,3 Bedroom,4,4,Semi-Furnished,6.3,Prepaid,Available,Yes,1950
+TAM-053,Fuo,3 Bedroom,4,3,Unfurnished,7.9,Prepaid,Available,Yes,1800
+TAM-054,Tishegu,2 Bedroom,3,3,Unfurnished,14.5,Prepaid,Available,Yes,1200
+TAM-055,Kanvilli,3 Bedroom,4,3,Unfurnished,14.6,Prepaid,Available,No,1550
+TAM-056,Vittin,3 Bedroom,4,3,Unfurnished,9.8,Prepaid,Not Available,Yes,2050
+TAM-057,Vittin,3 Bedroom,4,3,Unfurnished,4.9,Prepaid,Available,Yes,2100
+TAM-058,Fuo,Single Room,1,1,Unfurnished,6.0,Postpaid,Available,Yes,450
+TAM-059,Dungu,2 Bedroom,3,3,Unfurnished,2.9,Postpaid,Not Available,Yes,1200
+TAM-060,Nyohini,2 Bedroom,3,2,Unfurnished,3.3,Postpaid,Available,No,1500
+TAM-061,Kanvilli,2 Bedroom,3,2,Unfurnished,12.6,Postpaid,Available,Yes,1150
+TAM-062,Sagnarigu,2 Bedroom,3,3,Unfurnished,11.5,Prepaid,Available,No,1200
+TAM-063,Fuo,Chamber and Hall,2,1,Unfurnished,3.9,Postpaid,Available,Yes,950
+TAM-064,Nyohini,Single Room,1,1,Unfurnished,7.7,Prepaid,Not Available,Yes,750
+TAM-065,Kanvilli,Single Room,1,1,Semi-Furnished,9.3,Prepaid,Available,Yes,500
+TAM-066,Sagnarigu,2 Bedroom,3,2,Furnished,9.5,Prepaid,Available,No,1700
+TAM-067,Dungu,Chamber and Hall,2,1,Unfurnished,13.7,Prepaid,Not Available,No,500
+TAM-068,Nyohini,Single Room,1,1,Unfurnished,5.9,Prepaid,Available,Yes,600
+TAM-069,Education Ridge,Chamber and Hall,2,1,Unfurnished,6.6,Postpaid,Available,Yes,1000
+TAM-070,Vittin,2 Bedroom,3,2,Unfurnished,5.9,Prepaid,Available,Yes,1400
+TAM-071,Fuo,3 Bedroom,4,4,Unfurnished,5.6,Prepaid,Available,Yes,1900
+TAM-072,Lamashegu,Chamber and Hall,2,1,Furnished,8.5,Prepaid,Available,Yes,1150
+TAM-073,Jisonayili,2 Bedroom,3,3,Unfurnished,4.5,Postpaid,Available,Yes,1250
+TAM-074,Education Ridge,2 Bedroom,3,2,Unfurnished,8.9,Prepaid,Available,Yes,1350
+TAM-075,Lamashegu,Chamber and Hall,2,1,Unfurnished,6.0,Prepaid,Available,Yes,1050
+TAM-076,Lamashegu,Chamber and Hall,2,1,Unfurnished,5.7,Prepaid,Available,Yes,1000
+TAM-077,Sagnarigu,2 Bedroom,3,2,Unfurnished,2.4,Prepaid,Available,No,1300
+TAM-078,Dungu,Single Room,1,1,Furnished,7.9,Postpaid,Not Available,Yes,750
+TAM-079,Nyohini,Chamber and Hall,2,1,Semi-Furnished,3.9,Prepaid,Available,Yes,1100
+TAM-080,Fuo,2 Bedroom,3,3,Unfurnished,8.1,Prepaid,Available,Yes,1250
+TAM-081,Jisonayili,Chamber and Hall,2,1,Unfurnished,8.7,Prepaid,Available,Yes,900
+TAM-082,Nyohini,2 Bedroom,3,2,Semi-Furnished,2.5,Postpaid,Not Available,Yes,1700
+TAM-083,Nyohini,3 Bedroom,4,3,Unfurnished,6.3,Postpaid,Available,No,1950
+TAM-084,Vittin,Single Room,1,1,Semi-Furnished,10.3,Postpaid,Available,Yes,650
+TAM-085,Jisonayili,2 Bedroom,3,3,Unfurnished,6.3,Prepaid,Available,Yes,1150
+TAM-086,Tishegu,Chamber and Hall,2,2,Unfurnished,4.2,Prepaid,Not Available,Yes,1000
+TAM-087,Nyohini,2 Bedroom,3,2,Unfurnished,13.3,Prepaid,Not Available,No,1200
+TAM-088,Kanvilli,2 Bedroom,3,2,Unfurnished,3.9,Postpaid,Not Available,Yes,1200
+TAM-089,Sagnarigu,Chamber and Hall,2,2,Unfurnished,7.4,Postpaid,Available,Yes,1000
+TAM-090,Vittin,2 Bedroom,3,2,Unfurnished,4.5,Postpaid,Not Available,Yes,1550
+TAM-091,Sagnarigu,Chamber and Hall,2,1,Unfurnished,14.3,Prepaid,Available,Yes,800
+TAM-092,Dungu,2 Bedroom,3,2,Unfurnished,10.1,Prepaid,Available,Yes,1200
+TAM-093,Nyohini,2 Bedroom,3,2,Furnished,2.7,Postpaid,Available,Yes,2100
+TAM-094,Kanvilli,Chamber and Hall,2,1,Semi-Furnished,3.9,Prepaid,Available,Yes,1050
+TAM-095,Education Ridge,2 Bedroom,3,3,Furnished,7.5,Postpaid,Available,Yes,2000
+TAM-096,Nyohini,Chamber and Hall,2,1,Unfurnished,1.5,Prepaid,Available,Yes,1000
+TAM-097,Jisonayili,2 Bedroom,3,2,Unfurnished,14.5,Prepaid,Not Available,Yes,1100
+TAM-098,Tishegu,Chamber and Hall,2,1,Semi-Furnished,5.9,Prepaid,Available,Yes,850
+TAM-099,Nyohini,Chamber and Hall,2,1,Unfurnished,11.0,Prepaid,Available,Yes,800
+TAM-100,Lamashegu,Chamber and Hall,2,1,Unfurnished,11.5,Prepaid,Available,Yes,900
+TAM-101,Tishegu,3 Bedroom,4,3,Semi-Furnished,13.1,Prepaid,Available,Yes,2050
+TAM-102,Education Ridge,2 Bedroom,3,3,Unfurnished,10.1,Postpaid,Available,No,1450
+TAM-103,Nyohini,2 Bedroom,3,2,Furnished,14.2,Prepaid,Available,No,1700
+TAM-104,Jisonayili,3 Bedroom,4,3,Semi-Furnished,5.8,Postpaid,Available,Yes,2000
+TAM-105,Dungu,2 Bedroom,3,2,Unfurnished,8.7,Postpaid,Available,No,1050
+TAM-106,Nyohini,3 Bedroom,4,3,Unfurnished,3.5,Prepaid,Available,Yes,2050
+TAM-107,Education Ridge,Chamber and Hall,2,1,Unfurnished,12.7,Prepaid,Available,Yes,950
+TAM-108,Sagnarigu,Single Room,1,1,Unfurnished,8.0,Prepaid,Available,Yes,500
+TAM-109,Sagnarigu,2 Bedroom,3,2,Unfurnished,9.9,Prepaid,Not Available,Yes,1300
+TAM-110,Jisonayili,Single Room,1,1,Semi-Furnished,2.2,Prepaid,Available,Yes,500
+TAM-111,Dungu,2 Bedroom,3,2,Unfurnished,8.9,Prepaid,Not Available,Yes,1050
+TAM-112,Dungu,Single Room,1,1,Semi-Furnished,12.8,Prepaid,Available,No,450
+TAM-113,Kanvilli,Chamber and Hall,2,1,Unfurnished,6.8,Postpaid,Available,Yes,900
+TAM-114,Vittin,Chamber and Hall,2,2,Unfurnished,6.1,Postpaid,Available,No,1000
+TAM-115,Tishegu,Chamber and Hall,2,2,Unfurnished,14.4,Postpaid,Available,Yes,850
+TAM-116,Education Ridge,3 Bedroom,4,3,Unfurnished,10.7,Postpaid,Available,Yes,2150
+TAM-117,Tishegu,3 Bedroom,4,4,Unfurnished,7.6,Prepaid,Available,Yes,1750
+TAM-118,Dungu,2 Bedroom,3,2,Unfurnished,12.6,Postpaid,Available,Yes,1200
+TAM-119,Jisonayili,3 Bedroom,4,4,Unfurnished,7.2,Prepaid,Available,Yes,1800
+TAM-120,Jisonayili,Chamber and Hall,2,1,Unfurnished,13.3,Prepaid,Not Available,Yes,850
+TAM-121,Tishegu,Single Room,1,1,Unfurnished,14.1,Postpaid,Available,No,350
+TAM-122,Education Ridge,Chamber and Hall,2,1,Unfurnished,6.6,Prepaid,Available,Yes,800
+TAM-123,Lamashegu,Single Room,1,1,Unfurnished,5.0,Prepaid,Available,Yes,600
+TAM-124,Lamashegu,Chamber and Hall,2,1,Unfurnished,14.4,Postpaid,Available,Yes,850
+TAM-125,Nyohini,3 Bedroom,4,3,Unfurnished,13.7,Prepaid,Not Available,Yes,1900
+TAM-126,Kanvilli,2 Bedroom,3,2,Unfurnished,1.7,Prepaid,Available,No,1250
+TAM-127,Sagnarigu,2 Bedroom,3,2,Unfurnished,4.0,Postpaid,Not Available,Yes,1450
+TAM-128,Lamashegu,Single Room,1,1,Semi-Furnished,4.1,Prepaid,Available,Yes,650
+TAM-129,Jisonayili,Chamber and Hall,2,1,Unfurnished,4.8,Postpaid,Not Available,No,850
+TAM-130,Kanvilli,2 Bedroom,3,2,Unfurnished,4.5,Prepaid,Available,Yes,1350
+TAM-131,Sagnarigu,3 Bedroom,4,3,Unfurnished,13.5,Postpaid,Available,Yes,1850
+TAM-132,Nyohini,2 Bedroom,3,2,Unfurnished,13.1,Postpaid,Available,Yes,1350
+TAM-133,Lamashegu,Single Room,1,1,Unfurnished,5.7,Postpaid,Available,Yes,550
+TAM-134,Fuo,Chamber and Hall,2,2,Semi-Furnished,1.1,Prepaid,Not Available,Yes,1150
+TAM-135,Jisonayili,2 Bedroom,3,2,Unfurnished,1.1,Prepaid,Not Available,Yes,1400
+TAM-136,Nyohini,2 Bedroom,3,3,Unfurnished,5.0,Prepaid,Not Available,Yes,1350
+TAM-137,Kanvilli,Single Room,1,1,Furnished,10.6,Postpaid,Available,No,550
+TAM-138,Sagnarigu,2 Bedroom,3,3,Unfurnished,13.2,Postpaid,Available,Yes,1450
+TAM-139,Tishegu,Single Room,1,1,Semi-Furnished,6.2,Prepaid,Available,Yes,650
+TAM-140,Vittin,Chamber and Hall,2,1,Unfurnished,12.1,Prepaid,Available,No,850
+TAM-141,Dungu,2 Bedroom,3,2,Unfurnished,14.3,Postpaid,Available,Yes,1000
+TAM-142,Vittin,Chamber and Hall,2,1,Unfurnished,11.1,Prepaid,Available,Yes,900
+TAM-143,Jisonayili,2 Bedroom,3,2,Unfurnished,14.6,Prepaid,Available,Yes,1300
+TAM-144,Tishegu,2 Bedroom,3,2,Unfurnished,1.5,Prepaid,Available,Yes,1050
+TAM-145,Tishegu,Single Room,1,1,Semi-Furnished,7.0,Prepaid,Available,Yes,700
+TAM-146,Nyohini,Chamber and Hall,2,1,Unfurnished,1.2,Postpaid,Available,No,800
+TAM-147,Sagnarigu,Chamber and Hall,2,1,Semi-Furnished,13.0,Postpaid,Available,Yes,900
+TAM-148,Sagnarigu,2 Bedroom,3,2,Semi-Furnished,8.8,Prepaid,Available,Yes,1500
+TAM-149,Lamashegu,2 Bedroom,3,2,Unfurnished,5.5,Prepaid,Available,No,1250
+TAM-150,Lamashegu,3 Bedroom,4,3,Unfurnished,13.5,Postpaid,Available,Yes,1800

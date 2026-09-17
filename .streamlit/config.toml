@@ -1,0 +1,6 @@
+[theme]
+primaryColor = "#22C55E"             # Light Green accent (for hover radius & highlights)
+backgroundColor = "#0B1D3A"          # Deep Dark Blue overall page background
+secondaryBackgroundColor = "#FFFFFF"  # Pure White background for form & cards
+textColor = "#0B1D3A"                # Dark Blue text for form components
+font = "sans serif"
