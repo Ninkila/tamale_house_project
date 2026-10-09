@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Enquiries | Tenant Dashboard</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header class="navbar">
+    <div class="container">
+      <a href="../index.html" class="nav-brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Tamale House <span class="gold">Market</span></span>
+      </a>
+
+      <div class="nav-actions">
+        <span style="color:var(--accent); font-size:0.9rem; font-weight:700;">TENANT PORTAL</span>
+        <button onclick="logoutUser()" class="btn btn-outline btn-sm">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <nav class="sidebar-menu">
+        <a href="dashboard.html" class="sidebar-item">Overview</a>
+        <a href="saved-properties.html" class="sidebar-item">Saved Houses</a>
+        <a href="my-enquiries.html" class="sidebar-item active">My Enquiries</a>
+        <a href="settings.html" class="sidebar-item">Settings</a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-main">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Track Submitted Enquiries</h1>
+          <p class="dashboard-subtitle">History of messages and interest forms sent to landlords</p>
+        </div>
+      </div>
+
+      <div id="tenant-enquiries-list">
+        <!-- Rendered by tenant.js -->
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+  <script src="../js/tenant.js"></script>
+</body>
+</html>

@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Property | Landlord Dashboard</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header class="navbar">
+    <div class="container">
+      <a href="../index.html" class="nav-brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Tamale House <span class="gold">Market</span></span>
+      </a>
+
+      <div class="nav-actions">
+        <span style="color:var(--accent); font-size:0.9rem; font-weight:700;">LANDLORD PORTAL</span>
+        <button onclick="logoutUser()" class="btn btn-outline btn-sm">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <nav class="sidebar-menu">
+        <a href="dashboard.html" class="sidebar-item">Overview</a>
+        <a href="add-property.html" class="sidebar-item active">Add Property</a>
+        <a href="my-properties.html" class="sidebar-item">My Listings</a>
+        <a href="enquiries.html" class="sidebar-item">Manage Enquiries</a>
+        <a href="settings.html" class="sidebar-item">Settings</a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-main">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">List a New Rental Property</h1>
+          <p class="dashboard-subtitle">Fill in complete property specs to publish your listing to tenants in Tamale</p>
+        </div>
+      </div>
+
+      <div style="background:#FFF; padding:2.5rem; border-radius:var(--radius-lg); border:1px solid var(--border-color); max-width:800px; box-shadow:var(--shadow-sm);">
+        <form id="add-property-form" style="display:flex; flex-direction:column; gap:1.5rem;">
+          
+          <div class="form-group">
+            <label for="prop-title">Property Title / Listing Label *</label>
+            <input type="text" id="prop-title" class="form-control" required placeholder="e.g. Modern 2 Bedroom Flat with Prepaid Meter" />
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
+            <div class="form-group">
+              <label for="prop-type">Property Type *</label>
+              <select id="prop-type" class="form-select" required>
+                <option value="Single Room">Single Room</option>
+                <option value="Chamber and Hall">Chamber & Hall</option>
+                <option value="2 Bedroom">2 Bedroom House</option>
+                <option value="3 Bedroom">3 Bedroom House</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="prop-neighborhood">Tamale Neighbourhood *</label>
+              <input type="text" id="prop-neighborhood" class="form-control" required placeholder="e.g. Nyohini, Lamashegu, Dungu, Vittin" />
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.25rem;">
+            <div class="form-group">
+              <label for="prop-rent">Monthly Rent (GH₵) *</label>
+              <input type="number" id="prop-rent" class="form-control" required min="100" placeholder="e.g. 1200" />
+            </div>
+
+            <div class="form-group">
+              <label for="prop-rooms">Number of Rooms *</label>
+              <input type="number" id="prop-rooms" class="form-control" required min="1" max="10" value="2" />
+            </div>
+
+            <div class="form-group">
+              <label for="prop-bathrooms">Bathrooms *</label>
+              <input type="number" id="prop-bathrooms" class="form-control" required min="1" max="10" value="1" />
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.25rem;">
+            <div class="form-group">
+              <label for="prop-furnishing">Furnishing *</label>
+              <select id="prop-furnishing" class="form-select">
+                <option value="Unfurnished">Unfurnished</option>
+                <option value="Semi-Furnished">Semi-Furnished</option>
+                <option value="Furnished">Furnished</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="prop-water">Water Supply *</label>
+              <select id="prop-water" class="form-select">
+                <option value="Available">Available (Pipe / Tanker)</option>
+                <option value="Not Available">Limited / Borehole</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="prop-electricity">Electricity *</label>
+              <select id="prop-electricity" class="form-select">
+                <option value="Prepaid">Prepaid Meter</option>
+                <option value="Postpaid">Postpaid Meter</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
+            <div class="form-group">
+              <label for="prop-compound">Walled Compound? *</label>
+              <select id="prop-compound" class="form-select">
+                <option value="Yes">Yes (Gated & Walled)</option>
+                <option value="No">No</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="prop-phone">WhatsApp / Contact Number *</label>
+              <input type="tel" id="prop-phone" class="form-control" required placeholder="e.g. 0241234567" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="prop-image">Property Image URL</label>
+            <input type="url" id="prop-image" class="form-control" placeholder="https://images.unsplash.com/photo-..." />
+            <small style="color:var(--text-muted);">Leave empty to use a standard property preview photo.</small>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg btn-full" style="margin-top:1rem;">
+            Publish Property Listing
+          </button>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+  <script src="../js/houses.js"></script>
+  <script src="../js/landlord.js"></script>
+</body>
+</html>

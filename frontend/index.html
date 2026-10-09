@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tamale House Market | Find Your Next Home in Tamale</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <!-- NAVIGATION BAR -->
+  <header class="navbar">
+    <div class="container">
+      <a href="index.html" class="nav-brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Tamale House <span class="gold">Market</span></span>
+      </a>
+
+      <nav class="nav-menu">
+        <a href="index.html" class="nav-link active">Home</a>
+        <a href="houses.html" class="nav-link">Browse Houses</a>
+        <a href="about.html" class="nav-link">About</a>
+        <a href="contact.html" class="nav-link">Contact</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="login.html" class="btn btn-outline btn-sm">Login</a>
+        <a href="register.html" class="btn btn-primary btn-sm">Register</a>
+        <a href="register.html?role=landlord" class="btn btn-accent btn-sm">List Your Property</a>
+      </div>
+
+      <button class="nav-toggle" aria-label="Toggle menu">☰</button>
+    </div>
+  </header>
+
+  <!-- HERO SECTION -->
+  <section class="hero">
+    <div class="container">
+      <div class="hero-content">
+        <h1 class="hero-title">Find Your Next Home in Tamale.</h1>
+        <p class="hero-subtitle">Discover rental homes that fit your budget, preferred location, and lifestyle across Northern Ghana's booming capital.</p>
+      </div>
+
+      <!-- SEARCH FORM CARD -->
+      <div class="search-card">
+        <form action="houses.html" method="GET" class="search-grid">
+          <div class="form-group">
+            <label for="search-location">Neighbourhood</label>
+            <input type="text" id="search-location" name="neighborhood" class="form-control" placeholder="e.g. Nyohini, Lamashegu, Dungu" />
+          </div>
+
+          <div class="form-group">
+            <label for="search-type">House Type</label>
+            <select id="search-type" name="houseType" class="form-select">
+              <option value="Any">All Types</option>
+              <option value="Single Room">Single Room</option>
+              <option value="Chamber and Hall">Chamber & Hall</option>
+              <option value="2 Bedroom">2 Bedroom House</option>
+              <option value="3 Bedroom">3 Bedroom House</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="search-budget">Max Rent (GH₵)</label>
+            <input type="number" id="search-budget" name="maxRent" class="form-control" placeholder="e.g. 2000" />
+          </div>
+
+          <div class="form-group">
+            <label for="search-rooms">Min Rooms</label>
+            <select id="search-rooms" name="rooms" class="form-select">
+              <option value="0">Any Rooms</option>
+              <option value="1">1+ Room</option>
+              <option value="2">2+ Rooms</option>
+              <option value="3">3+ Rooms</option>
+              <option value="4">4+ Rooms</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <button type="submit" class="btn btn-primary btn-full" style="height:48px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              Search Properties
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURED PROPERTIES SECTION -->
+  <section class="section section-bg">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Featured Rental Houses</h2>
+        <p class="section-subtitle">Verified rental accommodations across key suburbs in Tamale</p>
+      </div>
+
+      <div class="properties-grid" id="homepage-featured-grid">
+        <!-- Rendered via JS -->
+      </div>
+
+      <div style="text-align: center; margin-top: 3rem;">
+        <a href="houses.html" class="btn btn-outline btn-lg">View All Available Houses</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- NEIGHBOURHOOD BROWSING SECTION -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Browse by Tamale Neighbourhoods</h2>
+        <p class="section-subtitle">Explore popular residential areas in and around Central Tamale</p>
+      </div>
+
+      <div class="location-grid">
+        <div class="location-card" onclick="window.location.href='houses.html?neighborhood=Lamashegu'">
+          <div class="location-overlay"></div>
+          <div class="location-info">
+            <h3 class="location-name">Lamashegu</h3>
+            <span class="location-count">Popular for Single Rooms & Studios</span>
+          </div>
+        </div>
+
+        <div class="location-card" onclick="window.location.href='houses.html?neighborhood=Nyohini'">
+          <div class="location-overlay"></div>
+          <div class="location-info">
+            <h3 class="location-name">Nyohini</h3>
+            <span class="location-count">Family Homes & 2 Bedroom Flats</span>
+          </div>
+        </div>
+
+        <div class="location-card" onclick="window.location.href='houses.html?neighborhood=Dungu'">
+          <div class="location-overlay"></div>
+          <div class="location-info">
+            <h3 class="location-name">Dungu</h3>
+            <span class="location-count">Near UDS Campus & Executive Rentals</span>
+          </div>
+        </div>
+
+        <div class="location-card" onclick="window.location.href='houses.html?neighborhood=Education Ridge'">
+          <div class="location-overlay"></div>
+          <div class="location-info">
+            <h3 class="location-name">Education Ridge</h3>
+            <span class="location-count">Quiet & Accessible Suburbs</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS SECTION -->
+  <section class="section section-bg">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">How Tamale House Market Works</h2>
+        <p class="section-subtitle">Simple, direct, and transparent real estate connections</p>
+      </div>
+
+      <div class="features-three-grid">
+        <div class="feature-box">
+          <div class="feature-icon-wrapper">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
+          <h3>1. Search & Filter</h3>
+          <p>Filter properties by monthly rent (GH₵), room numbers, water availability, and preferred Tamale suburb.</p>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-wrapper">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+          </div>
+          <h3>2. Save Favourites</h3>
+          <p>Bookmark rental houses to your personal tenant dashboard for easy review and comparison.</p>
+        </div>
+
+        <div class="feature-box">
+          <div class="feature-icon-wrapper">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654z"/></svg>
+          </div>
+          <h3>3. Direct Landlord Contact</h3>
+          <p>Connect instantly via WhatsApp or direct phone call with pre-filled property reference details.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LANDLORD CTA BANNER -->
+  <section class="section">
+    <div class="container">
+      <div class="cta-banner">
+        <h2>Are You a House Owner or Landlord in Tamale?</h2>
+        <p>List your rental properties on Northern Ghana's dedicated real estate marketplace and reach thousands of verified tenants searching for accommodation.</p>
+        <a href="register.html?role=landlord" class="btn btn-accent btn-lg">List Your Property Now</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h3>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D4A853" stroke-width="2.2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            Tamale House Market
+          </h3>
+          <p>Connecting landlords and tenants across Tamale, Ghana with trusted, direct real estate marketplace solutions.</p>
+        </div>
+
+        <div class="footer-col">
+          <h4>Navigation</h4>
+          <div class="footer-links">
+            <a href="index.html">Home</a>
+            <a href="houses.html">Browse Houses</a>
+            <a href="about.html">About Us</a>
+            <a href="contact.html">Contact Us</a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4>For Users</h4>
+          <div class="footer-links">
+            <a href="login.html">Login</a>
+            <a href="register.html">Tenant Sign Up</a>
+            <a href="register.html?role=landlord">Landlord Sign Up</a>
+          </div>
+        </div>
+
+        <div class="footer-col">
+          <h4>Suburbs</h4>
+          <div class="footer-links">
+            <a href="houses.html?neighborhood=Lamashegu">Lamashegu</a>
+            <a href="houses.html?neighborhood=Nyohini">Nyohini</a>
+            <a href="houses.html?neighborhood=Dungu">Dungu</a>
+            <a href="houses.html?neighborhood=Tishegu">Tishegu</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 Tamale House Market. All rights reserved.</p>
+        <p>Designed for Tamale, Northern Region, Ghana.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script src="js/houses.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const houses = getHousesData();
+      const featured = houses.slice(0, 6);
+      const grid = document.getElementById('homepage-featured-grid');
+      if (grid) {
+        grid.innerHTML = featured.map(h => renderHouseCard(h)).join('');
+      }
+    });
+  </script>
+</body>
+</html>

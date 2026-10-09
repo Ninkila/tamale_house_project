@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings | Landlord Dashboard</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+
+  <!-- NAVBAR -->
+  <header class="navbar">
+    <div class="container">
+      <a href="../index.html" class="nav-brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Tamale House <span class="gold">Market</span></span>
+      </a>
+
+      <div class="nav-actions">
+        <span style="color:var(--accent); font-size:0.9rem; font-weight:700;">LANDLORD PORTAL</span>
+        <button onclick="logoutUser()" class="btn btn-outline btn-sm">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <nav class="sidebar-menu">
+        <a href="dashboard.html" class="sidebar-item">Overview</a>
+        <a href="add-property.html" class="sidebar-item">Add Property</a>
+        <a href="my-properties.html" class="sidebar-item">My Listings</a>
+        <a href="enquiries.html" class="sidebar-item">Manage Enquiries</a>
+        <a href="settings.html" class="sidebar-item active">Settings</a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-main">
+      <div class="dashboard-header">
+        <div>
+          <h1 class="dashboard-title">Landlord Profile & Contact Preferences</h1>
+          <p class="dashboard-subtitle">Manage public contact visibility and profile details</p>
+        </div>
+      </div>
+
+      <div style="background:#FFF; padding:2.5rem; border-radius:var(--radius-lg); border:1px solid var(--border-color); max-width:680px; box-shadow:var(--shadow-sm);">
+        <form id="landlord-settings-form" style="display:flex; flex-direction:column; gap:1.25rem;">
+          
+          <div class="form-group">
+            <label for="set-fullname">Full Name</label>
+            <input type="text" id="set-fullname" class="form-control" required placeholder="Enter full name" />
+          </div>
+
+          <div class="form-group">
+            <label for="set-email">Email Address</label>
+            <input type="email" id="set-email" class="form-control" required placeholder="Enter email" />
+          </div>
+
+          <div class="form-group">
+            <label for="set-phone">Public Contact / WhatsApp Phone Number</label>
+            <input type="tel" id="set-phone" class="form-control" required placeholder="e.g. 0241234567" />
+          </div>
+
+          <div style="margin-top:1rem; padding-top:1.25rem; border-top:1px solid var(--border-color);">
+            <h4 style="font-size:1.05rem; color:var(--primary); margin-bottom:1rem;">Contact Display Preferences</h4>
+            
+            <div style="display:flex; flex-direction:column; gap:0.85rem;">
+              <label style="display:flex; align-items:center; gap:0.75rem; cursor:pointer;">
+                <input type="checkbox" id="set-whatsapp-consent" checked style="width:18px; height:18px;" />
+                <span>Display <strong>WhatsApp Contact Button</strong> on my property details pages</span>
+              </label>
+
+              <label style="display:flex; align-items:center; gap:0.75rem; cursor:pointer;">
+                <input type="checkbox" id="set-phone-consent" checked style="width:18px; height:18px;" />
+                <span>Display <strong>Direct Call Phone Link</strong> on my property details pages</span>
+              </label>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg btn-full" style="margin-top:1rem;">
+            Save Preferences
+          </button>
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script src="../js/main.js"></script>
+  <script src="../js/landlord.js"></script>
+</body>
+</html>

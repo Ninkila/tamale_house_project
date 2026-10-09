@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Property Details | Tamale House Market</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <!-- NAVIGATION BAR -->
+  <header class="navbar">
+    <div class="container">
+      <a href="index.html" class="nav-brand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Tamale House <span class="gold">Market</span></span>
+      </a>
+
+      <nav class="nav-menu">
+        <a href="index.html" class="nav-link">Home</a>
+        <a href="houses.html" class="nav-link active">Browse Houses</a>
+        <a href="about.html" class="nav-link">About</a>
+        <a href="contact.html" class="nav-link">Contact</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="login.html" class="btn btn-outline btn-sm">Login</a>
+        <a href="register.html" class="btn btn-primary btn-sm">Register</a>
+        <a href="register.html?role=landlord" class="btn btn-accent btn-sm">List Your Property</a>
+      </div>
+
+      <button class="nav-toggle" aria-label="Toggle menu">☰</button>
+    </div>
+  </header>
+
+  <main class="main-content section">
+    <div class="container" id="property-details-container">
+      <!-- Dynamic property content loaded by property.js -->
+    </div>
+  </main>
+
+  <!-- ENQUIRY MODAL -->
+  <div id="enquiry-modal" style="display:none; position:fixed; inset:0; background:rgba(11,29,58,0.7); backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center; padding:1rem;">
+    <div style="background:#FFF; max-width:500px; width:100%; border-radius:var(--radius-lg); padding:2rem; box-shadow:var(--shadow-lg); position:relative;">
+      <button onclick="closeEnquiryModal()" style="position:absolute; top:1rem; right:1rem; background:none; border:none; font-size:1.5rem; cursor:pointer; color:var(--text-muted);">&times;</button>
+      <h3 style="font-size:1.4rem; color:var(--primary); margin-bottom:0.5rem;">Send Direct Enquiry</h3>
+      <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1.5rem;">Submit your message to the landlord regarding this property.</p>
+
+      <form id="enquiry-form" style="display:flex; flex-direction:column; gap:1rem;">
+        <div class="form-group">
+          <label>Your Full Name</label>
+          <input type="text" id="enquiry-name" class="form-control" required placeholder="Enter full name" />
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <input type="email" id="enquiry-email" class="form-control" required placeholder="Enter email address" />
+        </div>
+        <div class="form-group">
+          <label>Message / Question</label>
+          <textarea id="enquiry-message" class="form-control" rows="4" required placeholder="State your interest or questions regarding rent terms..."></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">Submit Enquiry</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <p>&copy; 2026 Tamale House Market. All rights reserved.</p>
+        <p>Tamale, Ghana</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+  <script src="js/houses.js"></script>
+  <script src="js/property.js"></script>
+</body>
+</html>
