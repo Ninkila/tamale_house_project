@@ -19,12 +19,14 @@ function initLoginForm() {
     const passwordInput = document.getElementById('login-password').value;
     const errorBox = document.getElementById('login-error');
 
+    if (errorBox) errorBox.style.display = 'none';
+
     if (!usernameInput || !passwordInput) {
       showAuthError(errorBox, 'Please enter both username/email and password.');
       return;
     }
 
-    // Check backend API or prototype local storage fallback
+    // Attempt Backend REST API Authentication
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -37,30 +39,26 @@ function initLoginForm() {
         setCurrentUser(user);
         redirectUserDashboard(user.role);
         return;
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        showAuthError(errorBox, errorData.error || 'Invalid username or password.');
+        return;
       }
     } catch (err) {
-      // Prototype Fallback Login
-    }
+      // Backend server not reachable - check client-side registered users with strict password match
+      const localUsers = JSON.parse(localStorage.getItem('thm_users') || '[]');
+      const foundUser = localUsers.find(
+        u => (u.username.toLowerCase() === usernameInput.toLowerCase() || u.email.toLowerCase() === usernameInput.toLowerCase()) && u.password === passwordInput
+      );
 
-    // Check local registered users fallback
-    const localUsers = JSON.parse(localStorage.getItem('thm_users') || '[]');
-    const foundUser = localUsers.find(u => (u.username === usernameInput || u.email === usernameInput));
+      if (foundUser) {
+        const { password, ...safeUser } = foundUser;
+        setCurrentUser(safeUser);
+        redirectUserDashboard(foundUser.role);
+        return;
+      }
 
-    if (foundUser) {
-      setCurrentUser(foundUser);
-      redirectUserDashboard(foundUser.role);
-      return;
-    }
-
-    // Default prototype login for test credentials
-    if (usernameInput.toLowerCase().includes('landlord')) {
-      const user = { username: usernameInput, full_name: 'Landlord User', email: 'landlord@tamalehouse.com', role: 'landlord' };
-      setCurrentUser(user);
-      redirectUserDashboard('landlord');
-    } else {
-      const user = { username: usernameInput, full_name: 'Tenant User', email: 'tenant@tamalehouse.com', role: 'tenant' };
-      setCurrentUser(user);
-      redirectUserDashboard('tenant');
+      showAuthError(errorBox, 'Invalid username or password. Please register an account first.');
     }
   });
 }
@@ -97,11 +95,18 @@ function initRegisterForm() {
     const username = document.getElementById('reg-username').value.trim();
     const password = document.getElementById('reg-password').value;
     const confirmPassword = document.getElementById('reg-confirm-password').value;
-    const role = roleInput ? roleInput.value : 'tenant';
+    const role = roleInput ? roleInput.value : '';
     const errorBox = document.getElementById('register-error');
 
+    if (errorBox) errorBox.style.display = 'none';
+
     if (!fullName || !email || !username || !password || !confirmPassword) {
-      showAuthError(errorBox, 'Please complete all required fields.');
+      showAuthError(errorBox, 'Please complete all required registration fields.');
+      return;
+    }
+
+    if (!role || (role !== 'landlord' && role !== 'tenant')) {
+      showAuthError(errorBox, 'Please choose your account role: LANDLORD or TENANT.');
       return;
     }
 
@@ -115,34 +120,44 @@ function initRegisterForm() {
       return;
     }
 
-    const newUser = {
-      username: username,
-      full_name: fullName,
-      email: email,
-      role: role
-    };
-
-    // Save locally
+    // Check local existing registration
     const localUsers = JSON.parse(localStorage.getItem('thm_users') || '[]');
-    if (localUsers.some(u => u.username === username || u.email === email)) {
-      showAuthError(errorBox, 'Username or Email is already registered.');
+    if (localUsers.some(u => u.username.toLowerCase() === username.toLowerCase() || u.email.toLowerCase() === email.toLowerCase())) {
+      showAuthError(errorBox, 'Username or email address is already registered.');
       return;
     }
 
-    localUsers.push(newUser);
-    localStorage.setItem('thm_users', JSON.stringify(localUsers));
-
-    // Try backend API registration
+    // Attempt Backend REST API registration
     try {
-      await fetch('/api/auth/register', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password, role, full_name: fullName })
       });
-    } catch (err) {}
 
-    // Auto log in user
-    setCurrentUser(newUser);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        showAuthError(errorBox, errorData.error || 'Registration failed. Username or Email already exists.');
+        return;
+      }
+    } catch (err) {
+      // Offline / standalone local fallback
+    }
+
+    const newUser = {
+      username: username,
+      full_name: fullName,
+      email: email,
+      password: password,
+      role: role
+    };
+
+    localUsers.push(newUser);
+    localStorage.setItem('thm_users', JSON.stringify(localUsers));
+
+    // Log in authenticated user with chosen role
+    const { password: _, ...loggedUser } = newUser;
+    setCurrentUser(loggedUser);
     redirectUserDashboard(role);
   });
 }

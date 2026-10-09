@@ -342,6 +342,36 @@ img {
   box-shadow: 0 0 0 3px rgba(11, 29, 58, 0.1);
 }
 
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-wrapper .form-control {
+  padding-right: 2.75rem;
+}
+
+.toggle-password-btn {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.35rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color var(--transition-fast);
+  z-index: 10;
+}
+
+.toggle-password-btn:hover {
+  color: var(--primary);
+}
+
 /* Section Common Styling */
 .section {
   padding: 4.5rem 0;

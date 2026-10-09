@@ -70,39 +70,40 @@ def get_house_detail(house_id):
 @app.route("/api/auth/register", methods=["POST"])
 def api_register():
     data = request.json or {}
-    username = data.get("username")
-    email = data.get("email")
-    password = data.get("password")
-    role = data.get("role", "tenant")
+    username = data.get("username", "").strip()
+    email = data.get("email", "").strip()
+    password = data.get("password", "")
+    role = data.get("role", "").strip().lower()
+    full_name = data.get("full_name", "").strip()
 
-    if not username or not email or not password:
-        return jsonify({"error": "Missing required registration fields"}), 400
+    if not username or not email or not password or not role:
+        return jsonify({"error": "Missing required fields. Please specify your account role (Landlord or Tenant)."}), 400
 
-    success = register_user(username, email, password)
+    if role not in ["landlord", "tenant"]:
+        return jsonify({"error": "Invalid role specified. Role must be 'landlord' or 'tenant'."}), 400
+
+    success = register_user(username, email, password, role=role, full_name=full_name)
     if success:
-        # Update role if passed
-        conn = get_connection()
-        conn.execute("UPDATE users SET role = ? WHERE username = ?", (role, username))
-        conn.commit()
-        conn.close()
-
         return jsonify({
             "message": "User registered successfully",
-            "user": {"username": username, "email": email, "role": role}
+            "user": {"username": username, "email": email, "role": role, "full_name": full_name or username}
         })
-    return jsonify({"error": "Username or email already exists"}), 400
+    return jsonify({"error": "Username or email address is already registered."}), 400
 
 
 @app.route("/api/auth/login", methods=["POST"])
 def api_login():
     data = request.json or {}
-    username = data.get("username")
-    password = data.get("password")
+    username = data.get("username", "").strip()
+    password = data.get("password", "")
+
+    if not username or not password:
+        return jsonify({"error": "Please provide both username/email and password."}), 400
 
     user = login_user(username, password)
     if user:
         return jsonify(user)
-    return jsonify({"error": "Invalid username or password"}), 401
+    return jsonify({"error": "Invalid username or password."}), 401
 
 
 # 4. Landlord Property Management

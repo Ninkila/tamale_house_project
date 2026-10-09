@@ -84,17 +84,17 @@ function renderPropertyDetails(house) {
           </div>
 
           <div style="display:flex; flex-direction:column; gap:1rem;">
-            <a href="${waUrl}" target="_blank" rel="noopener" class="btn btn-whatsapp btn-lg btn-full">
+            <a href="${waUrl}" target="_blank" rel="noopener" onclick="return handleContactClick(event)" class="btn btn-whatsapp btn-lg btn-full">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654z"/></svg>
               Chat on WhatsApp
             </a>
 
-            <a href="${telUrl}" class="btn btn-phone btn-lg btn-full">
+            <a href="${telUrl}" onclick="return handleContactClick(event)" class="btn btn-phone btn-lg btn-full">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
               Call Landlord Directly
             </a>
 
-            <button onclick="openEnquiryModal()" class="btn btn-outline btn-full">
+            <button onclick="handleEnquiryBtnClick(event)" class="btn btn-outline btn-full">
               Send Direct Enquiry
             </button>
 
@@ -109,6 +109,17 @@ function renderPropertyDetails(house) {
   `;
 }
 
+function handleEnquiryBtnClick(e) {
+  if (e) e.preventDefault();
+  const user = getCurrentUser();
+  if (!user) {
+    alert('Account Required: You must create an account or log in to send enquiries to landlords.');
+    window.location.href = 'login.html';
+    return;
+  }
+  openEnquiryModal();
+}
+
 function initEnquiryModal(house) {
   const modal = document.getElementById('enquiry-modal');
   if (!modal) return;
@@ -118,6 +129,11 @@ function initEnquiryModal(house) {
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const user = getCurrentUser();
+      if (!user) {
+        alert('Account Required: You must create an account or log in to send enquiries to landlords.');
+        window.location.href = 'login.html';
+        return;
+      }
       const name = document.getElementById('enquiry-name').value;
       const email = document.getElementById('enquiry-email').value;
       const message = document.getElementById('enquiry-message').value;
@@ -128,7 +144,7 @@ function initEnquiryModal(house) {
         house_title: `${house.house_type} in ${house.neighborhood}`,
         tenant_name: name,
         tenant_email: email,
-        tenant_username: user ? user.username : 'Guest',
+        tenant_username: user.username,
         message: message,
         date: new Date().toLocaleDateString(),
         status: 'Pending'

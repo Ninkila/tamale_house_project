@@ -14,7 +14,7 @@ def create_users_table():
     connection = get_connection()
     cursor = connection.cursor()
 
-    # Users Table
+    # Users Table (Role must be explicitly stored as 'landlord' or 'tenant')
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -22,7 +22,7 @@ def create_users_table():
             email TEXT NOT NULL UNIQUE,
             full_name TEXT,
             password_hash TEXT NOT NULL,
-            role TEXT NOT NULL DEFAULT 'tenant',
+            role TEXT NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)

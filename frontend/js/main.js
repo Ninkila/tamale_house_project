@@ -11,9 +11,34 @@ const ENQUIRIES_KEY = 'thm_enquiries_list';
 document.addEventListener('DOMContentLoaded', () => {
   initNavigation();
   updateUserNavUI();
+  initPasswordToggles();
 });
 
-// Mobile Nav Toggle
+function initPasswordToggles() {
+  document.querySelectorAll('.toggle-password-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = btn.getAttribute('data-target');
+      const input = document.getElementById(targetId);
+      if (!input) return;
+
+      const eyeIcon = btn.querySelector('.eye-icon');
+      const eyeOffIcon = btn.querySelector('.eye-off-icon');
+
+      if (input.type === 'password') {
+        input.type = 'text';
+        if (eyeIcon) eyeIcon.style.display = 'none';
+        if (eyeOffIcon) eyeOffIcon.style.display = 'inline-block';
+      } else {
+        input.type = 'password';
+        if (eyeIcon) eyeIcon.style.display = 'inline-block';
+        if (eyeOffIcon) eyeOffIcon.style.display = 'none';
+      }
+    });
+  });
+}
+
+// Mobile Nav Toggle & Nav Link Interceptors
 function initNavigation() {
   const toggleBtn = document.querySelector('.nav-toggle');
   const navMenu = document.querySelector('.nav-menu');
@@ -46,7 +71,6 @@ function setCurrentUser(user) {
 
 function logoutUser() {
   localStorage.removeItem(CURRENT_USER_KEY);
-  // Redirect to home or login page
   const isDashboard = window.location.pathname.includes('/landlord/') || window.location.pathname.includes('/tenant/');
   if (isDashboard) {
     window.location.href = '../login.html';
@@ -75,6 +99,20 @@ function updateUserNavUI() {
   }
 }
 
+// Contact Action Guard - Requires Authentication
+function handleContactClick(e) {
+  const user = getCurrentUser();
+  if (!user) {
+    e.preventDefault();
+    e.stopPropagation();
+    alert('Account Required: You must create an account or log in to contact landlords or arrange viewings on Tamale House Market.');
+    const isDashboard = window.location.pathname.includes('/landlord/') || window.location.pathname.includes('/tenant/');
+    window.location.href = isDashboard ? '../login.html' : 'login.html';
+    return false;
+  }
+  return true;
+}
+
 // WhatsApp Link Generator
 function formatGhanaPhone(phone) {
   if (!phone) return null;
@@ -100,7 +138,7 @@ function generatePhoneLink(phone) {
   return `tel:${cleanPhone}`;
 }
 
-// Saved Properties (Favourites) Manager
+// Saved Properties (Favourites) Manager - Requires Authentication
 function getSavedFavourites() {
   const data = localStorage.getItem(SAVED_FAVOURITES_KEY);
   return data ? JSON.parse(data) : [];
@@ -109,8 +147,9 @@ function getSavedFavourites() {
 function toggleFavourite(houseId) {
   const user = getCurrentUser();
   if (!user) {
-    alert('Please log in to save properties to your favourites list.');
-    window.location.href = window.location.pathname.includes('/landlord/') || window.location.pathname.includes('/tenant/') ? '../login.html' : 'login.html';
+    alert('Account Required: You must create an account or log in to save properties to your favourites list.');
+    const isDashboard = window.location.pathname.includes('/landlord/') || window.location.pathname.includes('/tenant/');
+    window.location.href = isDashboard ? '../login.html' : 'login.html';
     return false;
   }
 

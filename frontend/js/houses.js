@@ -72,7 +72,7 @@ function renderHouseCard(house) {
 
         <div class="property-actions">
           <a href="property.html?id=${house.house_id}" class="btn btn-primary btn-sm" style="flex:1;">View Details</a>
-          <a href="${waUrl}" target="_blank" rel="noopener" class="btn btn-whatsapp btn-sm" title="Contact Landlord on WhatsApp">
+          <a href="${waUrl}" target="_blank" rel="noopener" onclick="return handleContactClick(event)" class="btn btn-whatsapp btn-sm" title="Contact Landlord on WhatsApp">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654z"/></svg>
             Chat
           </a>
