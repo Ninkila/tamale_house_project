@@ -21,7 +21,7 @@ const SEED_HOUSES = [
 function getHousesData() {
   const stored = localStorage.getItem(TAMALE_HOUSES_KEY);
   if (stored) {
-    try { return JSON.parse(stored); } catch (e) {}
+    try { return JSON.parse(stored); } catch (e) { console.warn('Corrupt houses data; resetting to seed.'); }
   }
   localStorage.setItem(TAMALE_HOUSES_KEY, JSON.stringify(SEED_HOUSES));
   return SEED_HOUSES;
@@ -37,8 +37,8 @@ function renderHouseCard(house) {
   return `
     <div class="property-card" data-id="${house.house_id}">
       <div class="property-img-wrapper">
-        <img src="${house.image}" alt="${house.house_type} in ${house.neighborhood}" class="property-img" loading="lazy" />
-        <span class="property-badge badge-rent">${house.house_type}</span>
+        <img src="${escapeHTML(house.image)}" alt="${escapeHTML(house.house_type)} in ${escapeHTML(house.neighborhood)}" class="property-img" loading="lazy" />
+        <span class="property-badge badge-rent">${escapeHTML(house.house_type)}</span>
         <span class="badge-status" style="color: ${house.water === 'Available' ? '#065F46' : '#991B1B'}">
           ${house.water === 'Available' ? '● Water Available' : '○ Water Limited'}
         </span>
@@ -48,11 +48,11 @@ function renderHouseCard(house) {
           ${formatGHS(house.monthly_rent_ghs)} <span class="period">/ month</span>
         </div>
         <h3 class="property-title">
-          <a href="property.html?id=${house.house_id}">${house.house_type} in ${house.neighborhood}</a>
+          <a href="property.html?id=${house.house_id}">${escapeHTML(house.house_type)} in ${escapeHTML(house.neighborhood)}</a>
         </h3>
         <div class="property-location">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-          ${house.neighborhood}, Tamale (${house.distance_from_central_tamale_km} km from town)
+          ${escapeHTML(house.neighborhood)}, Tamale (${house.distance_from_central_tamale_km} km from town)
         </div>
         
         <div class="property-features">
@@ -66,7 +66,7 @@ function renderHouseCard(house) {
           </div>
           <div class="feature-item" title="Furnishing">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/></svg>
-            ${house.furnishing}
+            ${escapeHTML(house.furnishing)}
           </div>
         </div>
 
@@ -97,6 +97,9 @@ function handleFavClick(e, houseId) {
   } else {
     svg.setAttribute('fill', 'none');
     svg.setAttribute('stroke', '#64748B');
+    if (document.getElementById('saved-properties-grid') && typeof renderSavedPropertiesList === 'function') {
+      renderSavedPropertiesList();
+    }
   }
 }
 

@@ -1,15 +1,42 @@
-import json
-import sqlite3
+import os
+import re
+from contextlib import closing
 from pathlib import Path
 from flask import Flask, jsonify, request, send_from_directory
+import psycopg
 from src.database import create_users_table, get_connection
 from src.auth import register_user, login_user
 from src.house_search import find_houses
 
 app = Flask(__name__, static_folder="frontend", static_url_path="")
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "change-me-in-production")
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SESSION_COOKIE_SECURE"] = os.environ.get("FLASK_ENV", "production").lower() == "production"
 
-# Ensure database tables exist
-create_users_table()
+# Keep the web app available when PostgreSQL has not been configured yet.
+DATABASE_READY = False
+try:
+    create_users_table()
+    DATABASE_READY = True
+except (psycopg.Error, RuntimeError) as exc:
+    app.logger.warning("PostgreSQL is not ready; database-backed routes will return 503: %s", exc)
+
+
+@app.before_request
+def ensure_auth_database():
+    global DATABASE_READY
+    if not request.path.startswith("/api/auth/") or DATABASE_READY:
+        return None
+    try:
+        create_users_table()
+        DATABASE_READY = True
+    except (psycopg.Error, RuntimeError) as exc:
+        app.logger.error("PostgreSQL is unavailable for authentication: %s", exc)
+        return jsonify({
+            "error": "PostgreSQL is unavailable. Set DATABASE_URL in the project .env file and start the database."
+        }), 503
+    return None
 
 
 # --- SERVE FRONTEND STATIC FILES ---
@@ -43,11 +70,8 @@ def get_houses():
         return jsonify(houses)
     except Exception as e:
         conn = get_connection()
-        conn.row_factory = sqlite3.Row
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM properties")
-        rows = [dict(row) for row in cursor.fetchall()]
-        conn.close()
+        with closing(conn), conn:
+            rows = conn.execute("SELECT * FROM properties").fetchall()
         return jsonify(rows)
 
 
@@ -55,26 +79,27 @@ def get_houses():
 @app.route("/api/houses/<house_id>", methods=["GET"])
 def get_house_detail(house_id):
     conn = get_connection()
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    cursor.execute("SELECT * FROM properties WHERE house_id = ?", (house_id,))
-    row = cursor.fetchone()
-    conn.close()
+    with closing(conn), conn:
+        row = conn.execute("SELECT * FROM properties WHERE house_id = %s", (house_id,)).fetchone()
 
     if row:
-        return jsonify(dict(row))
+        return jsonify(row)
     return jsonify({"error": "Property not found"}), 404
 
 
 # 3. User Authentication
 @app.route("/api/auth/register", methods=["POST"])
 def api_register():
-    data = request.json or {}
-    username = data.get("username", "").strip()
-    email = data.get("email", "").strip()
+    data = request.get_json(silent=True) or {}
+    if not isinstance(data, dict):
+        return jsonify({"error": "Registration details must be a JSON object."}), 400
+    if any(not isinstance(data.get(field, ""), str) for field in ("username", "email", "password", "role", "full_name")):
+        return jsonify({"error": "Registration fields must be strings."}), 400
+    username = (data.get("username") or "").strip()
+    email = (data.get("email") or "").strip()
     password = data.get("password", "")
-    role = data.get("role", "").strip().lower()
-    full_name = data.get("full_name", "").strip()
+    role = (data.get("role") or "").strip().lower()
+    full_name = (data.get("full_name") or "").strip()
 
     if not username or not email or not password or not role:
         return jsonify({"error": "Missing required fields. Please specify your account role (Landlord or Tenant)."}), 400
@@ -82,25 +107,45 @@ def api_register():
     if role not in ["landlord", "tenant"]:
         return jsonify({"error": "Invalid role specified. Role must be 'landlord' or 'tenant'."}), 400
 
-    success = register_user(username, email, password, role=role, full_name=full_name)
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        return jsonify({"error": "Please enter a valid email address."}), 400
+    if len(password) < 8:
+        return jsonify({"error": "Password must be at least 8 characters."}), 400
+
+    try:
+        success = register_user(username, email, password, role=role, full_name=full_name)
+    except psycopg.Error as exc:
+        app.logger.exception("PostgreSQL registration failed: %s", exc)
+        return jsonify({"error": "PostgreSQL could not save the account. Check the database connection and try again."}), 503
     if success:
         return jsonify({
             "message": "User registered successfully",
-            "user": {"username": username, "email": email, "role": role, "full_name": full_name or username}
+            "username": username,
+            "email": email.lower(),
+            "role": role,
+            "full_name": full_name or username
         })
     return jsonify({"error": "Username or email address is already registered."}), 400
 
 
 @app.route("/api/auth/login", methods=["POST"])
 def api_login():
-    data = request.json or {}
-    username = data.get("username", "").strip()
+    data = request.get_json(silent=True) or {}
+    if not isinstance(data, dict):
+        return jsonify({"error": "Login details must be a JSON object."}), 400
+    if any(not isinstance(data.get(field, ""), str) for field in ("username", "password")):
+        return jsonify({"error": "Login fields must be strings."}), 400
+    username = (data.get("username") or "").strip()
     password = data.get("password", "")
 
     if not username or not password:
         return jsonify({"error": "Please provide both username/email and password."}), 400
 
-    user = login_user(username, password)
+    try:
+        user = login_user(username, password)
+    except psycopg.Error as exc:
+        app.logger.exception("PostgreSQL login failed: %s", exc)
+        return jsonify({"error": "PostgreSQL is unavailable. Check the database connection and try again."}), 503
     if user:
         return jsonify(user)
     return jsonify({"error": "Invalid username or password."}), 401
@@ -118,19 +163,18 @@ def add_landlord_property():
     bathrooms = int(data.get("bathrooms", 1))
 
     conn = get_connection()
-    conn.execute("""
+    with closing(conn), conn:
+        conn.execute("""
         INSERT INTO properties (
             house_id, neighborhood, house_type, rooms, bathrooms,
             monthly_rent_ghs, water, electricity, compound, furnishing
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
     """, (
         house_id, neighborhood, house_type, rooms, bathrooms,
         monthly_rent_ghs, data.get("water", "Available"),
         data.get("electricity", "Prepaid"), data.get("compound", "Yes"),
         data.get("furnishing", "Unfurnished")
     ))
-    conn.commit()
-    conn.close()
 
     return jsonify({"message": "Property listed successfully", "house_id": house_id})
 
@@ -138,9 +182,8 @@ def add_landlord_property():
 @app.route("/api/landlord/properties/<house_id>", methods=["DELETE"])
 def delete_landlord_property(house_id):
     conn = get_connection()
-    conn.execute("DELETE FROM properties WHERE house_id = ?", (house_id,))
-    conn.commit()
-    conn.close()
+    with closing(conn), conn:
+        conn.execute("DELETE FROM properties WHERE house_id = %s", (house_id,))
     return jsonify({"message": f"Listing {house_id} removed successfully"})
 
 
@@ -149,18 +192,27 @@ def delete_landlord_property(house_id):
 def post_enquiry():
     data = request.json or {}
     conn = get_connection()
-    conn.execute("""
+    with conn:
+        conn.execute("""
         INSERT INTO enquiries (property_id, tenant_name, tenant_email, message)
-        VALUES (?, ?, ?, ?)
+        VALUES (%s, %s, %s, %s)
     """, (
         data.get("property_id"), data.get("tenant_name"),
         data.get("tenant_email"), data.get("message")
     ))
-    conn.commit()
-    conn.close()
     return jsonify({"message": "Enquiry submitted successfully"})
 
 
+@app.route("/health")
+def health_check():
+    if DATABASE_READY:
+        return jsonify({"status": "ok", "database": "ready"})
+    return jsonify({"status": "degraded", "database": "unavailable"}), 503
+
+
 if __name__ == "__main__":
-    print("Serving Tamale House Market on http://127.0.0.1:5000")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", "5000"))
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    print(f"Serving Tamale House Market on http://{host}:{port}")
+    app.run(host=host, port=port, debug=debug)

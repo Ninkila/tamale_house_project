@@ -28,8 +28,7 @@ function initTenantDashboard() {
   if (!savedCountEl) return;
 
   const favourites = getSavedFavourites();
-  const enquiriesStr = localStorage.getItem(ENQUIRIES_KEY);
-  const enquiries = enquiriesStr ? JSON.parse(enquiriesStr) : [];
+  const enquiries = safeParse(ENQUIRIES_KEY, []);
   const user = getCurrentUser();
 
   const myEnquiries = enquiries.filter(e => e.tenant_username === (user ? user.username : 'Guest'));
@@ -74,8 +73,7 @@ function initTenantEnquiriesPage() {
   const container = document.getElementById('tenant-enquiries-list');
   if (!container) return;
 
-  const enquiriesStr = localStorage.getItem(ENQUIRIES_KEY);
-  const enquiries = enquiriesStr ? JSON.parse(enquiriesStr) : [];
+  const enquiries = safeParse(ENQUIRIES_KEY, []);
   const user = getCurrentUser();
 
   const myEnquiries = enquiries.filter(e => e.tenant_username === (user ? user.username : 'Guest'));
@@ -94,15 +92,15 @@ function initTenantEnquiriesPage() {
 
   container.innerHTML = myEnquiries.map(item => `
     <div style="background:var(--secondary); padding:1.5rem; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-bottom:1rem; box-shadow:var(--shadow-sm);">
-      <div style="display:flex; justify-between; align-items:center; margin-bottom:0.75rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
         <div>
-          <h4 style="font-size:1.1rem; color:var(--primary); font-weight:700;">${item.house_title}</h4>
-          <span style="font-size:0.8rem; color:var(--text-muted);">Submitted on: ${item.date}</span>
+          <h4 style="font-size:1.1rem; color:var(--primary); font-weight:700;">${escapeHTML(item.house_title)}</h4>
+          <span style="font-size:0.8rem; color:var(--text-muted);">Submitted on: ${escapeHTML(item.date)}</span>
         </div>
-        <span class="badge-status-pill status-pending">${item.status}</span>
+        <span class="badge-status-pill status-pending">${escapeHTML(item.status)}</span>
       </div>
       <p style="background:var(--bg-light); padding:1rem; border-radius:var(--radius-sm); font-size:0.95rem; color:var(--text-main);">
-        "${item.message}"
+        "${escapeHTML(item.message)}"
       </p>
     </div>
   `).join('');

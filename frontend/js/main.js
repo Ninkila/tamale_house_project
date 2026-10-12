@@ -62,7 +62,7 @@ function initNavigation() {
 // User Session Management
 function getCurrentUser() {
   const userJson = localStorage.getItem(CURRENT_USER_KEY);
-  return userJson ? JSON.parse(userJson) : null;
+  try { return userJson ? JSON.parse(userJson) : null; } catch (e) { return null; }
 }
 
 function setCurrentUser(user) {
@@ -139,9 +139,13 @@ function generatePhoneLink(phone) {
 }
 
 // Saved Properties (Favourites) Manager - Requires Authentication
+function favKey() {
+  const u = getCurrentUser();
+  return u ? `${SAVED_FAVOURITES_KEY}_${u.username}` : SAVED_FAVOURITES_KEY;
+}
+
 function getSavedFavourites() {
-  const data = localStorage.getItem(SAVED_FAVOURITES_KEY);
-  return data ? JSON.parse(data) : [];
+  try { return JSON.parse(localStorage.getItem(favKey()) || '[]'); } catch (e) { return []; }
 }
 
 function toggleFavourite(houseId) {
@@ -158,11 +162,11 @@ function toggleFavourite(houseId) {
 
   if (index >= 0) {
     favourites.splice(index, 1);
-    localStorage.setItem(SAVED_FAVOURITES_KEY, JSON.stringify(favourites));
+    localStorage.setItem(favKey(), JSON.stringify(favourites));
     return false;
   } else {
     favourites.push(houseId);
-    localStorage.setItem(SAVED_FAVOURITES_KEY, JSON.stringify(favourites));
+    localStorage.setItem(favKey(), JSON.stringify(favourites));
     return true;
   }
 }
@@ -175,4 +179,27 @@ function isFavourite(houseId) {
 // Format Currency
 function formatGHS(amount) {
   return `GH₵ ${Number(amount).toLocaleString('en-GH')}`;
+}
+
+// ---- Shared helpers ----
+function escapeHTML(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+function safeParse(key, fallback) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
+}
+
+// Availability is its own flag; older records fall back to the water field
+function isHouseAvailable(h) {
+  return typeof h.available === 'boolean' ? h.available : h.water === 'Available';
+}
+
+// Collision-safe ID (survives deletions)
+function nextHouseId(houses) {
+  const max = houses.reduce((m, h) => {
+    const n = parseInt(String(h.house_id).replace(/\D/g, ''), 10);
+    return isNaN(n) ? m : Math.max(m, n);
+  }, 0);
+  return `TAM-${String(max + 1).padStart(3, '0')}`;
 }

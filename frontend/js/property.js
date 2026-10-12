@@ -13,7 +13,13 @@ function initPropertyDetailsPage() {
   const houseId = urlParams.get('id') || 'TAM-001';
 
   const houses = getHousesData();
-  const house = houses.find(h => h.house_id === houseId) || houses[0];
+  const house = houses.find(h => h.house_id === houseId);
+
+  if (!house) {
+    const c = document.getElementById('property-details-container');
+    if (c) c.innerHTML = `<div class="empty-state"><h3>Listing Not Found</h3><p>This property may have been removed.</p><a href="houses.html" class="btn btn-primary">Browse Houses</a></div>`;
+    return;
+  }
 
   renderPropertyDetails(house);
   initEnquiryModal(house);
@@ -29,12 +35,12 @@ function renderPropertyDetails(house) {
 
   container.innerHTML = `
     <div class="property-detail-header" style="margin-bottom: 2rem;">
-      <div style="display:flex; justify-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
         <div>
-          <h1 style="font-size: 2.2rem; font-weight: 800; color: var(--primary);">${house.house_type} in ${house.neighborhood}</h1>
+          <h1 style="font-size: 2.2rem; font-weight: 800; color: var(--primary);">${escapeHTML(house.house_type)} in ${escapeHTML(house.neighborhood)}</h1>
           <p style="color: var(--text-muted); font-size: 1.05rem; display:flex; align-items:center; gap:0.5rem; margin-top:0.35rem;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-            ${house.neighborhood}, Tamale • ${house.distance_from_central_tamale_km} km from Central Tamale
+            ${escapeHTML(house.neighborhood)}, Tamale • ${house.distance_from_central_tamale_km} km from Central Tamale
           </p>
         </div>
         <div style="text-align: right;">
@@ -47,23 +53,23 @@ function renderPropertyDetails(house) {
     <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2.5rem; margin-bottom: 3rem;">
       <div>
         <div style="border-radius: var(--radius-lg); overflow: hidden; height: 420px; background:#e2e8f0; margin-bottom: 1.5rem; box-shadow: var(--shadow-md);">
-          <img src="${house.image}" alt="${house.house_type}" style="width:100%; height:100%; object-fit:cover;" />
+          <img src="${escapeHTML(house.image)}" alt="${escapeHTML(house.house_type)}" style="width:100%; height:100%; object-fit:cover;" />
         </div>
 
         <div style="background-color: var(--secondary); padding: 2rem; border-radius: var(--radius-lg); border:1px solid var(--border-color); box-shadow: var(--shadow-sm); margin-bottom: 2rem;">
           <h2 style="font-size: 1.4rem; color: var(--primary); margin-bottom: 1rem;">Property Overview</h2>
           <p style="color: var(--text-main); line-height: 1.7; margin-bottom: 1.5rem;">
-            A beautiful, well-maintained ${house.house_type.toLowerCase()} located in the serene neighbourhood of ${house.neighborhood}, Tamale. Ideal for working professionals or small families seeking comfort, accessibility, and peace of mind.
+            A beautiful, well-maintained ${escapeHTML(house.house_type.toLowerCase())} located in the serene neighbourhood of ${escapeHTML(house.neighborhood)}, Tamale. Ideal for working professionals or small families seeking comfort, accessibility, and peace of mind.
           </p>
 
           <h3 style="font-size: 1.15rem; color: var(--primary); margin-bottom: 1rem;">Key Specifications</h3>
           <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; background-color: var(--bg-light); padding: 1.25rem; border-radius: var(--radius-md);">
             <div><strong>Rooms:</strong> ${house.rooms} Bedrooms/Rooms</div>
             <div><strong>Bathrooms:</strong> ${house.bathrooms} Baths</div>
-            <div><strong>Furnishing:</strong> ${house.furnishing}</div>
-            <div><strong>Water Supply:</strong> ${house.water}</div>
-            <div><strong>Electricity:</strong> ${house.electricity}</div>
-            <div><strong>Walled Compound:</strong> ${house.compound}</div>
+            <div><strong>Furnishing:</strong> ${escapeHTML(house.furnishing)}</div>
+            <div><strong>Water Supply:</strong> ${escapeHTML(house.water)}</div>
+            <div><strong>Electricity:</strong> ${escapeHTML(house.electricity)}</div>
+            <div><strong>Walled Compound:</strong> ${escapeHTML(house.compound)}</div>
           </div>
         </div>
       </div>
@@ -117,6 +123,10 @@ function handleEnquiryBtnClick(e) {
     window.location.href = 'login.html';
     return;
   }
+  const nameEl = document.getElementById('enquiry-name');
+  const emailEl = document.getElementById('enquiry-email');
+  if (nameEl && !nameEl.value) nameEl.value = user.full_name || '';
+  if (emailEl && !emailEl.value) emailEl.value = user.email || '';
   openEnquiryModal();
 }
 
@@ -150,8 +160,7 @@ function initEnquiryModal(house) {
         status: 'Pending'
       };
 
-      const existingStr = localStorage.getItem(ENQUIRIES_KEY);
-      const list = existingStr ? JSON.parse(existingStr) : [];
+      const list = safeParse(ENQUIRIES_KEY, []);
       list.push(newEnquiry);
       localStorage.setItem(ENQUIRIES_KEY, JSON.stringify(list));
 

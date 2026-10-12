@@ -1,13 +1,33 @@
-/* ==========================================================================
-   TAMALE HOUSE MARKET - AUTHENTICATION MODULE
-   ========================================================================== */
+/* TAMALE HOUSE MARKET - PostgreSQL-backed authentication via the REST API. */
 
 document.addEventListener('DOMContentLoaded', () => {
   initLoginForm();
   initRegisterForm();
 });
 
-// LOGIN HANDLING
+function backendUnavailable(response) {
+  return !response || response.status === 404 || response.status === 405;
+}
+
+function unavailableMessage(response, action) {
+  if (!response) {
+    return `Cannot reach the ${action} API. Start the Flask server and check its PostgreSQL configuration.`;
+  }
+  return `The ${action} API route was not found. Open the site served by Flask at http://localhost:5000.`;
+}
+
+async function postJSON(url, body) {
+  try {
+    return await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+  } catch (e) {
+    return null; // network failure
+  }
+}
+
 function initLoginForm() {
   const loginForm = document.getElementById('login-form');
   if (!loginForm) return;
@@ -18,7 +38,6 @@ function initLoginForm() {
     const usernameInput = document.getElementById('login-username').value.trim();
     const passwordInput = document.getElementById('login-password').value;
     const errorBox = document.getElementById('login-error');
-
     if (errorBox) errorBox.style.display = 'none';
 
     if (!usernameInput || !passwordInput) {
@@ -26,49 +45,28 @@ function initLoginForm() {
       return;
     }
 
-    // Attempt Backend REST API Authentication
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: usernameInput, password: passwordInput })
-      });
+    const response = await postJSON('/api/auth/login', { username: usernameInput, password: passwordInput });
 
-      if (response.ok) {
-        const user = await response.json();
-        setCurrentUser(user);
-        redirectUserDashboard(user.role);
-        return;
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        showAuthError(errorBox, errorData.error || 'Invalid username or password.');
-        return;
-      }
-    } catch (err) {
-      // Backend server not reachable - check client-side registered users with strict password match
-      const localUsers = JSON.parse(localStorage.getItem('thm_users') || '[]');
-      const foundUser = localUsers.find(
-        u => (u.username.toLowerCase() === usernameInput.toLowerCase() || u.email.toLowerCase() === usernameInput.toLowerCase()) && u.password === passwordInput
-      );
-
-      if (foundUser) {
-        const { password, ...safeUser } = foundUser;
-        setCurrentUser(safeUser);
-        redirectUserDashboard(foundUser.role);
-        return;
-      }
-
-      showAuthError(errorBox, 'Invalid username or password. Please register an account first.');
+    if (response && response.ok) {
+      const user = await response.json();
+      setCurrentUser(user);
+      redirectUserDashboard(user.role);
+      return;
     }
+
+    if (response && !backendUnavailable(response)) {
+      const errorData = await response.json().catch(() => ({}));
+      showAuthError(errorBox, errorData.error || 'Invalid username or password.');
+      return;
+    }
+    showAuthError(errorBox, unavailableMessage(response, 'authentication'));
   });
 }
 
-// REGISTER HANDLING
 function initRegisterForm() {
   const registerForm = document.getElementById('register-form');
   if (!registerForm) return;
 
-  // Role Selection Cards
   const landlordRoleCard = document.getElementById('role-landlord');
   const tenantRoleCard = document.getElementById('role-tenant');
   const roleInput = document.getElementById('register-role');
@@ -79,7 +77,6 @@ function initRegisterForm() {
       tenantRoleCard.classList.remove('selected-role');
       roleInput.value = 'landlord';
     });
-
     tenantRoleCard.addEventListener('click', () => {
       tenantRoleCard.classList.add('selected-role');
       landlordRoleCard.classList.remove('selected-role');
@@ -97,68 +94,47 @@ function initRegisterForm() {
     const confirmPassword = document.getElementById('reg-confirm-password').value;
     const role = roleInput ? roleInput.value : '';
     const errorBox = document.getElementById('register-error');
-
     if (errorBox) errorBox.style.display = 'none';
 
     if (!fullName || !email || !username || !password || !confirmPassword) {
       showAuthError(errorBox, 'Please complete all required registration fields.');
       return;
     }
-
-    if (!role || (role !== 'landlord' && role !== 'tenant')) {
+    if (role !== 'landlord' && role !== 'tenant') {
       showAuthError(errorBox, 'Please choose your account role: LANDLORD or TENANT.');
       return;
     }
-
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
+      showAuthError(errorBox, 'Please enter a valid email address.');
+      return;
+    }
     if (password !== confirmPassword) {
       showAuthError(errorBox, 'Passwords do not match. Please re-enter.');
       return;
     }
-
-    if (password.length < 6) {
-      showAuthError(errorBox, 'Password must be at least 6 characters long.');
+    if (password.length < 8) {
+      showAuthError(errorBox, 'Password must be at least 8 characters long.');
       return;
     }
 
-    // Check local existing registration
-    const localUsers = JSON.parse(localStorage.getItem('thm_users') || '[]');
-    if (localUsers.some(u => u.username.toLowerCase() === username.toLowerCase() || u.email.toLowerCase() === email.toLowerCase())) {
-      showAuthError(errorBox, 'Username or email address is already registered.');
+    const response = await postJSON('/api/auth/register', { username, email, password, role, full_name: fullName });
+
+    // Backend handled it: never store credentials locally
+    if (response && response.ok) {
+      const created = await response.json().catch(() => null);
+      const user = created && created.role ? created : { username, full_name: fullName, email, role };
+      setCurrentUser(user);
+      redirectUserDashboard(user.role);
       return;
     }
 
-    // Attempt Backend REST API registration
-    try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password, role, full_name: fullName })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        showAuthError(errorBox, errorData.error || 'Registration failed. Username or Email already exists.');
-        return;
-      }
-    } catch (err) {
-      // Offline / standalone local fallback
+    if (response && !backendUnavailable(response)) {
+      const errorData = await response.json().catch(() => ({}));
+      showAuthError(errorBox, errorData.error || 'Registration failed. Username or Email already exists.');
+      return;
     }
 
-    const newUser = {
-      username: username,
-      full_name: fullName,
-      email: email,
-      password: password,
-      role: role
-    };
-
-    localUsers.push(newUser);
-    localStorage.setItem('thm_users', JSON.stringify(localUsers));
-
-    // Log in authenticated user with chosen role
-    const { password: _, ...loggedUser } = newUser;
-    setCurrentUser(loggedUser);
-    redirectUserDashboard(role);
+    showAuthError(errorBox, unavailableMessage(response, 'registration'));
   });
 }
 
@@ -169,9 +145,5 @@ function showAuthError(errorBox, message) {
 }
 
 function redirectUserDashboard(role) {
-  if (role === 'landlord') {
-    window.location.href = 'landlord/dashboard.html';
-  } else {
-    window.location.href = 'tenant/dashboard.html';
-  }
+  window.location.href = role === 'landlord' ? 'landlord/dashboard.html' : 'tenant/dashboard.html';
 }

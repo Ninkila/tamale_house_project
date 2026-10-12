@@ -1,16 +1,27 @@
-import src.database as database
-from src.auth import (
-    hash_password,
-    verify_password,
-    register_user,
-    login_user
+import os
+import uuid
+from contextlib import closing
+
+import pytest
+
+from src.auth import hash_password, login_user, register_user, verify_password
+from src.database import create_users_table, get_connection
+
+TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
+requires_postgres = pytest.mark.skipif(
+    not TEST_DATABASE_URL,
+    reason="Set TEST_DATABASE_URL to run PostgreSQL authentication integration tests.",
 )
-from src.database import create_users_table
+
+
+@pytest.fixture
+def postgres_db(monkeypatch):
+    monkeypatch.setenv("DATABASE_URL", TEST_DATABASE_URL)
+    create_users_table()
 
 
 def test_password_hashing():
     password = "test123"
-
     stored_hash = hash_password(password)
 
     assert stored_hash != password
@@ -18,59 +29,56 @@ def test_password_hashing():
     assert not verify_password("wrongpassword", stored_hash)
 
 
-def test_register_user(tmp_path, monkeypatch):
-    test_db = tmp_path / "test.db"
+def test_registration_returns_actionable_error_without_postgres(monkeypatch):
+    import src.database as database
 
-    monkeypatch.setattr(database, "DB_PATH", test_db)
+    def unavailable_database():
+        raise RuntimeError("Set DATABASE_URL to a PostgreSQL connection string.")
 
-    create_users_table()
+    monkeypatch.setattr(database, "create_users_table", unavailable_database)
+    import server
 
-    result = register_user(
-        "newuser",
-        "newuser@example.com",
-        "password123"
+    monkeypatch.setattr(server, "create_users_table", unavailable_database)
+    monkeypatch.setattr(server, "DATABASE_READY", False)
+    response = server.app.test_client().post(
+        "/api/auth/register",
+        json={
+            "username": "new-user",
+            "email": "new-user@example.com",
+            "password": "password123",
+            "role": "tenant",
+        },
     )
 
-    assert result is True
+    assert response.status_code == 503
+    assert "DATABASE_URL" in response.get_json()["error"]
 
-def test_duplicate_username_or_email(tmp_path, monkeypatch):
-    test_db = tmp_path / "test.db"
 
-    monkeypatch.setattr(database, "DB_PATH", test_db)
+@requires_postgres
+def test_register_and_login(postgres_db):
+    suffix = uuid.uuid4().hex
+    username = f"test_{suffix}"
+    email = f"{username}@example.com"
 
-    create_users_table()
+    assert register_user(username, email, "password123", "tenant") is True
+    user = login_user(email.upper(), "password123")
+    assert user["username"] == username
+    assert user["role"] == "tenant"
+    assert login_user(username, "wrongpassword") is None
 
-    first = register_user(
-        "fareed",
-        "fareed@example.com",
-        "password123"
-    )
+    with closing(get_connection()) as connection, connection:
+        connection.execute("DELETE FROM users WHERE username = %s", (username,))
 
-    second = register_user(
-        "fareed",
-        "another@example.com",
-        "password456"
-    )
 
-    assert first is True
-    assert second is False    
+@requires_postgres
+def test_duplicate_username_or_email_is_rejected(postgres_db):
+    suffix = uuid.uuid4().hex
+    username = f"test_{suffix}"
+    email = f"{username}@example.com"
 
-def test_login_user(tmp_path, monkeypatch):
-    test_db = tmp_path / "test.db"
+    assert register_user(username, email, "password123") is True
+    assert register_user(username.upper(), f"other_{suffix}@example.com", "password456") is False
+    assert register_user(f"other_{suffix}", email.upper(), "password456") is False
 
-    monkeypatch.setattr(database, "DB_PATH", test_db)
-
-    create_users_table()
-
-    register_user(
-        "loginuser",
-        "login@example.com",
-        "password123"
-    )
-
-    correct_login = login_user("loginuser", "password123")
-    wrong_login = login_user("loginuser", "wrongpassword")
-
-    assert correct_login is not None
-    assert correct_login["username"] == "loginuser"
-    assert wrong_login is None    
+    with closing(get_connection()) as connection, connection:
+        connection.execute("DELETE FROM users WHERE username = %s", (username,))
