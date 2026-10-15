@@ -80,8 +80,6 @@ A code editor such as Visual Studio Code is recommended.
 git clone 'https://github.com/Ninkila/tamale_house_project'
 ```
 
-Replace `https://github.com/Ninkila/tamale_house_project` with the actual URL of your GitHub repository.
-
 ### 2. Navigate to the project directory
 
 ```bash
