@@ -9,7 +9,7 @@ from src.auth import register_user, login_user
 from src.house_search import find_houses
 
 app = Flask(__name__, static_folder="frontend", static_url_path="")
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "change-me-in-production")
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "mimi121269reed")
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = os.environ.get("FLASK_ENV", "production").lower() == "production"

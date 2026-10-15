@@ -44,8 +44,22 @@ function initNavigation() {
   const navMenu = document.querySelector('.nav-menu');
 
   if (toggleBtn && navMenu) {
+    toggleBtn.setAttribute('aria-expanded', 'false');
     toggleBtn.addEventListener('click', () => {
-      navMenu.classList.toggle('active');
+      const isOpen = navMenu.classList.toggle('active');
+      toggleBtn.setAttribute('aria-expanded', String(isOpen));
+    });
+
+    navMenu.querySelectorAll('a').forEach(link => link.addEventListener('click', () => {
+      navMenu.classList.remove('active');
+      toggleBtn.setAttribute('aria-expanded', 'false');
+    }));
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        navMenu.classList.remove('active');
+        toggleBtn.setAttribute('aria-expanded', 'false');
+      }
     });
   }
 

@@ -35,7 +35,7 @@ function renderPropertyDetails(house) {
 
   container.innerHTML = `
     <div class="property-detail-header" style="margin-bottom: 2rem;">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+      <div class="property-title-row">
         <div>
           <h1 style="font-size: 2.2rem; font-weight: 800; color: var(--primary);">${escapeHTML(house.house_type)} in ${escapeHTML(house.neighborhood)}</h1>
           <p style="color: var(--text-muted); font-size: 1.05rem; display:flex; align-items:center; gap:0.5rem; margin-top:0.35rem;">
@@ -43,27 +43,27 @@ function renderPropertyDetails(house) {
             ${escapeHTML(house.neighborhood)}, Tamale • ${house.distance_from_central_tamale_km} km from Central Tamale
           </p>
         </div>
-        <div style="text-align: right;">
+        <div class="property-price-summary">
           <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary);">${formatGHS(house.monthly_rent_ghs)} <span style="font-size:1rem; color:var(--text-muted); font-weight:500;">/ month</span></div>
           <span class="badge-status-pill status-active" style="margin-top:0.35rem;">Verified Rental Listing</span>
         </div>
       </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2.5rem; margin-bottom: 3rem;">
+    <div class="property-detail-grid">
       <div>
-        <div style="border-radius: var(--radius-lg); overflow: hidden; height: 420px; background:#e2e8f0; margin-bottom: 1.5rem; box-shadow: var(--shadow-md);">
+        <div class="property-detail-image">
           <img src="${escapeHTML(house.image)}" alt="${escapeHTML(house.house_type)}" style="width:100%; height:100%; object-fit:cover;" />
         </div>
 
-        <div style="background-color: var(--secondary); padding: 2rem; border-radius: var(--radius-lg); border:1px solid var(--border-color); box-shadow: var(--shadow-sm); margin-bottom: 2rem;">
+        <div class="property-overview-card">
           <h2 style="font-size: 1.4rem; color: var(--primary); margin-bottom: 1rem;">Property Overview</h2>
           <p style="color: var(--text-main); line-height: 1.7; margin-bottom: 1.5rem;">
             A beautiful, well-maintained ${escapeHTML(house.house_type.toLowerCase())} located in the serene neighbourhood of ${escapeHTML(house.neighborhood)}, Tamale. Ideal for working professionals or small families seeking comfort, accessibility, and peace of mind.
           </p>
 
           <h3 style="font-size: 1.15rem; color: var(--primary); margin-bottom: 1rem;">Key Specifications</h3>
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; background-color: var(--bg-light); padding: 1.25rem; border-radius: var(--radius-md);">
+          <div class="property-specifications">
             <div><strong>Rooms:</strong> ${house.rooms} Bedrooms/Rooms</div>
             <div><strong>Bathrooms:</strong> ${house.bathrooms} Baths</div>
             <div><strong>Furnishing:</strong> ${escapeHTML(house.furnishing)}</div>
@@ -76,7 +76,7 @@ function renderPropertyDetails(house) {
 
       <!-- Landlord Contact Sidebar -->
       <div>
-        <div style="background-color: var(--secondary); padding: 2rem; border-radius: var(--radius-lg); border:1px solid var(--border-color); box-shadow: var(--shadow-md); position: sticky; top: 100px;">
+        <div class="property-contact-card">
           <h3 style="font-size: 1.25rem; color: var(--primary); margin-bottom: 1.25rem;">Contact Landlord</h3>
           
           <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; padding-bottom:1.25rem; border-bottom:1px solid var(--border-color);">

@@ -44,7 +44,7 @@
         </div>
       </div>
 
-      <div style="background:#FFF; padding:2.5rem; border-radius:var(--radius-lg); border:1px solid var(--border-color); max-width:800px; box-shadow:var(--shadow-sm);">
+      <div class="dashboard-form-card">
         <form id="add-property-form" style="display:flex; flex-direction:column; gap:1.5rem;">
           
           <div class="form-group">
@@ -52,7 +52,7 @@
             <input type="text" id="prop-title" class="form-control" required placeholder="e.g. Modern 2 Bedroom Flat with Prepaid Meter" />
           </div>
 
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
+          <div class="form-grid form-grid-two">
             <div class="form-group">
               <label for="prop-type">Property Type *</label>
               <select id="prop-type" class="form-select" required>
@@ -69,7 +69,7 @@
             </div>
           </div>
 
-          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.25rem;">
+          <div class="form-grid form-grid-three">
             <div class="form-group">
               <label for="prop-rent">Monthly Rent (GH₵) *</label>
               <input type="number" id="prop-rent" class="form-control" required min="100" placeholder="e.g. 1200" />
@@ -86,7 +86,7 @@
             </div>
           </div>
 
-          <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.25rem;">
+          <div class="form-grid form-grid-three">
             <div class="form-group">
               <label for="prop-furnishing">Furnishing *</label>
               <select id="prop-furnishing" class="form-select">
@@ -113,7 +113,7 @@
             </div>
           </div>
 
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.25rem;">
+          <div class="form-grid form-grid-two">
             <div class="form-group">
               <label for="prop-compound">Walled Compound? *</label>
               <select id="prop-compound" class="form-select">
