@@ -1,8 +1,34 @@
+# Python & Bytecode
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Virtual environments
 .venv/
 venv/
+ENV/
+env/
+.conda/
+
+# Environment files
 .env
+.env.local
+!.env.example
+
+# Test & coverage caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local databases & historical archives
+*.db
+*.sqlite
+*.sqlite3
+data/*.db
+src/data/*.db
+src/files.zip
+
+# Secrets & IDE
 .streamlit/secrets.toml
-data/tamale_house.db
-.env
+.DS_Store
+Thumbs.db

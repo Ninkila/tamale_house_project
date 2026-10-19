@@ -1,11 +1,24 @@
 import os
 import re
 from contextlib import closing
+from functools import wraps
 from pathlib import Path
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, session
 import psycopg
-from src.database import create_users_table, get_connection
-from src.auth import register_user, login_user
+
+from src.database import (
+    create_users_table,
+    get_connection,
+    get_property_by_id,
+    query_properties,
+    format_property_dict,
+)
+from src.auth import (
+    register_user,
+    login_user,
+    get_user_by_id,
+    update_user_profile,
+)
 from src.house_search import find_houses
 
 app = Flask(__name__, static_folder="frontend", static_url_path="")
@@ -14,7 +27,6 @@ app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SESSION_COOKIE_SECURE"] = os.environ.get("FLASK_ENV", "production").lower() == "production"
 
-# Keep the web app available when PostgreSQL has not been configured yet.
 DATABASE_READY = False
 try:
     create_users_table()
@@ -26,20 +38,48 @@ except (psycopg.Error, RuntimeError) as exc:
 @app.before_request
 def ensure_auth_database():
     global DATABASE_READY
-    if not request.path.startswith("/api/auth/") or DATABASE_READY:
+    if not request.path.startswith("/api/") or DATABASE_READY:
         return None
     try:
         create_users_table()
         DATABASE_READY = True
     except (psycopg.Error, RuntimeError) as exc:
-        app.logger.error("PostgreSQL is unavailable for authentication: %s", exc)
+        app.logger.error("PostgreSQL is unavailable: %s", exc)
         return jsonify({
             "error": "PostgreSQL is unavailable. Set DATABASE_URL in the project .env file and start the database."
         }), 503
     return None
 
 
+# --- AUTHORIZATION DECORATORS ---
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get("user_id"):
+            return jsonify({"error": "Authentication required. Please log in to proceed."}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+def role_required(required_role):
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not session.get("user_id"):
+                return jsonify({"error": "Authentication required. Please log in to proceed."}), 401
+            current_role = session.get("role")
+            if current_role != required_role:
+                return jsonify({
+                    "error": f"Access forbidden. This action requires a {required_role} account."
+                }), 403
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
 # --- SERVE FRONTEND STATIC FILES ---
+
 @app.route("/")
 def serve_index():
     return send_from_directory("frontend", "index.html")
@@ -48,46 +88,80 @@ def serve_index():
 @app.route("/<path:path>")
 def serve_static(path):
     target = Path("frontend") / path
-    if target.exists():
+    if target.exists() and not target.is_dir():
         return send_from_directory("frontend", path)
     return send_from_directory("frontend", "index.html")
 
 
 # --- REST API ENDPOINTS ---
 
-# 1. Browse & Search Houses
+# 1. Browse & Search Houses (PostgreSQL backed with CSV fallback)
 @app.route("/api/houses", methods=["GET"])
 def get_houses():
-    budget = float(request.args.get("budget", 999999))
+    budget = request.args.get("budget", request.args.get("maxRent"))
+    min_rent = request.args.get("minRent", request.args.get("min_rent"))
     location = request.args.get("neighborhood", request.args.get("location", ""))
-    bedroom = int(request.args.get("bedroom", request.args.get("rooms", 0)))
+    rooms = request.args.get("rooms", request.args.get("bedroom"))
+    bathrooms = request.args.get("bathrooms", request.args.get("bathroom"))
     water = request.args.get("water", "Any")
-    bathroom = int(request.args.get("bathroom", request.args.get("bathrooms", 0)))
+    house_type = request.args.get("houseType", request.args.get("house_type"))
+    available_only = request.args.get("available_only", "false").lower() in {"true", "1", "yes"}
 
     try:
-        df = find_houses(budget, location, bedroom, water, bathroom)
-        houses = df.to_dict(orient="records")
-        return jsonify(houses)
-    except Exception as e:
+        budget_val = float(budget) if budget is not None and budget != "" else None
+        min_rent_val = float(min_rent) if min_rent is not None and min_rent != "" else None
+        rooms_val = int(rooms) if rooms is not None and rooms != "" else None
+        bathrooms_val = int(bathrooms) if bathrooms is not None and bathrooms != "" else None
+    except ValueError:
+        return jsonify({"error": "Invalid filter numeric parameter provided."}), 400
+
+    conn = None
+    try:
         conn = get_connection()
         with closing(conn), conn:
-            rows = conn.execute("SELECT * FROM properties").fetchall()
-        return jsonify(rows)
+            houses = query_properties(
+                conn,
+                budget=budget_val,
+                min_rent=min_rent_val,
+                neighborhood=location,
+                rooms=rooms_val,
+                bathrooms=bathrooms_val,
+                water=water,
+                house_type=house_type,
+                available_only=available_only,
+            )
+            return jsonify(houses)
+    except Exception as exc:
+        app.logger.warning("PostgreSQL query failed, falling back to pandas CSV search: %s", exc)
+        try:
+            df = find_houses(
+                budget=budget_val or 999999,
+                location=location or "",
+                bedroom=rooms_val or 0,
+                water=water or "Any",
+                bathroom=bathrooms_val or 0,
+            )
+            return jsonify(df.to_dict(orient="records"))
+        except Exception as e:
+            return jsonify({"error": f"Search failed: {e}"}), 500
 
 
 # 2. Get Single Property Details
 @app.route("/api/houses/<house_id>", methods=["GET"])
 def get_house_detail(house_id):
-    conn = get_connection()
-    with closing(conn), conn:
-        row = conn.execute("SELECT * FROM properties WHERE house_id = %s", (house_id,)).fetchone()
+    try:
+        conn = get_connection()
+        with closing(conn), conn:
+            property_detail = get_property_by_id(conn, house_id)
+        if property_detail:
+            return jsonify(property_detail)
+        return jsonify({"error": "Property not found"}), 404
+    except Exception as exc:
+        app.logger.exception("Failed to retrieve house %s: %s", house_id, exc)
+        return jsonify({"error": "Failed to retrieve property details."}), 500
 
-    if row:
-        return jsonify(row)
-    return jsonify({"error": "Property not found"}), 404
 
-
-# 3. User Authentication
+# 3. User Authentication & Profile
 @app.route("/api/auth/register", methods=["POST"])
 def api_register():
     data = request.get_json(silent=True) or {}
@@ -95,11 +169,13 @@ def api_register():
         return jsonify({"error": "Registration details must be a JSON object."}), 400
     if any(not isinstance(data.get(field, ""), str) for field in ("username", "email", "password", "role", "full_name")):
         return jsonify({"error": "Registration fields must be strings."}), 400
+
     username = (data.get("username") or "").strip()
     email = (data.get("email") or "").strip()
     password = data.get("password", "")
     role = (data.get("role") or "").strip().lower()
     full_name = (data.get("full_name") or "").strip()
+    phone = (data.get("phone") or "0241234567").strip()
 
     if not username or not email or not password or not role:
         return jsonify({"error": "Missing required fields. Please specify your account role (Landlord or Tenant)."}), 400
@@ -113,18 +189,32 @@ def api_register():
         return jsonify({"error": "Password must be at least 8 characters."}), 400
 
     try:
-        success = register_user(username, email, password, role=role, full_name=full_name)
+        success = register_user(username, email, password, role=role, full_name=full_name, phone=phone)
     except psycopg.Error as exc:
         app.logger.exception("PostgreSQL registration failed: %s", exc)
         return jsonify({"error": "PostgreSQL could not save the account. Check the database connection and try again."}), 503
+
     if success:
+        user = login_user(username, password)
+        if user:
+            session["user_id"] = user["id"]
+            session["username"] = user["username"]
+            session["role"] = user["role"]
+            session["email"] = user["email"]
+            session["full_name"] = user["full_name"]
+            return jsonify({
+                "message": "User registered successfully",
+                "user": user,
+            }), 201
+
         return jsonify({
             "message": "User registered successfully",
             "username": username,
             "email": email.lower(),
             "role": role,
-            "full_name": full_name or username
-        })
+            "full_name": full_name or username,
+        }), 201
+
     return jsonify({"error": "Username or email address is already registered."}), 400
 
 
@@ -135,6 +225,7 @@ def api_login():
         return jsonify({"error": "Login details must be a JSON object."}), 400
     if any(not isinstance(data.get(field, ""), str) for field in ("username", "password")):
         return jsonify({"error": "Login fields must be strings."}), 400
+
     username = (data.get("username") or "").strip()
     password = data.get("password", "")
 
@@ -146,61 +237,397 @@ def api_login():
     except psycopg.Error as exc:
         app.logger.exception("PostgreSQL login failed: %s", exc)
         return jsonify({"error": "PostgreSQL is unavailable. Check the database connection and try again."}), 503
+
     if user:
+        session["user_id"] = user["id"]
+        session["username"] = user["username"]
+        session["role"] = user["role"]
+        session["email"] = user["email"]
+        session["full_name"] = user["full_name"]
         return jsonify(user)
+
     return jsonify({"error": "Invalid username or password."}), 401
 
 
+@app.route("/api/auth/logout", methods=["POST"])
+def api_logout():
+    session.clear()
+    return jsonify({"message": "Logged out successfully"})
+
+
+@app.route("/api/auth/me", methods=["GET"])
+def api_get_current_user():
+    user_id = session.get("user_id")
+    if not user_id:
+        return jsonify({"authenticated": False, "user": None}), 200
+
+    user = get_user_by_id(user_id)
+    if not user:
+        session.clear()
+        return jsonify({"authenticated": False, "user": None}), 200
+
+    return jsonify({"authenticated": True, "user": user}), 200
+
+
+@app.route("/api/auth/profile", methods=["PUT"])
+@login_required
+def api_update_profile():
+    data = request.get_json(silent=True) or {}
+    user_id = session["user_id"]
+
+    updated = update_user_profile(
+        user_id,
+        full_name=data.get("full_name"),
+        phone=data.get("phone"),
+        show_whatsapp=data.get("show_whatsapp"),
+        show_phone=data.get("show_phone"),
+    )
+    if updated:
+        session["full_name"] = updated["full_name"]
+        return jsonify({"message": "Profile updated successfully", "user": updated})
+    return jsonify({"error": "Failed to update profile."}), 400
+
+
 # 4. Landlord Property Management
+@app.route("/api/landlord/properties", methods=["GET"])
+@role_required("landlord")
+def get_landlord_properties():
+    landlord_id = session["user_id"]
+    conn = get_connection()
+    with closing(conn), conn:
+        props = query_properties(conn, landlord_id=landlord_id, available_only=False)
+    return jsonify(props)
+
+
 @app.route("/api/landlord/properties", methods=["POST"])
+@role_required("landlord")
 def add_landlord_property():
-    data = request.json or {}
-    house_id = data.get("house_id", f"TAM-{int(Path().stat().st_mtime)}")
-    neighborhood = data.get("neighborhood")
-    house_type = data.get("house_type", "2 Bedroom")
-    monthly_rent_ghs = float(data.get("monthly_rent_ghs", 1000))
-    rooms = int(data.get("rooms", 2))
-    bathrooms = int(data.get("bathrooms", 1))
+    data = request.get_json(silent=True) or {}
+    landlord_id = session["user_id"]
+
+    neighborhood = (data.get("neighborhood") or "").strip()
+    house_type = (data.get("house_type") or "2 Bedroom").strip()
+    title = (data.get("title") or f"{house_type} in {neighborhood}").strip()
+    description = (data.get("description") or "").strip()
+    image = (data.get("image") or "").strip()
+
+    try:
+        rent = float(data.get("monthly_rent_ghs") or data.get("rent", 0))
+        rooms = int(data.get("rooms", 2))
+        bathrooms = int(data.get("bathrooms", 1))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Rent, rooms, and bathrooms must be valid numeric values."}), 400
+
+    if not neighborhood:
+        return jsonify({"error": "Neighbourhood is required."}), 400
+    if rent <= 0:
+        return jsonify({"error": "Monthly rent must be greater than 0 GH₵."}), 400
+    if rooms < 1 or bathrooms < 0:
+        return jsonify({"error": "Please provide valid room and bathroom counts."}), 400
 
     conn = get_connection()
     with closing(conn), conn:
-        conn.execute("""
-        INSERT INTO properties (
-            house_id, neighborhood, house_type, rooms, bathrooms,
-            monthly_rent_ghs, water, electricity, compound, furnishing
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """, (
-        house_id, neighborhood, house_type, rooms, bathrooms,
-        monthly_rent_ghs, data.get("water", "Available"),
-        data.get("electricity", "Prepaid"), data.get("compound", "Yes"),
-        data.get("furnishing", "Unfurnished")
-    ))
+        # Generate next house identifier
+        max_row = conn.execute("SELECT house_id FROM properties WHERE house_id LIKE 'TAM-%'").fetchall()
+        max_id_num = 0
+        for r in max_row:
+            digits = "".join(c for c in r["house_id"] if c.isdigit())
+            if digits:
+                max_id_num = max(max_id_num, int(digits))
+        house_id = f"TAM-{str(max_id_num + 1).padStart(3, '0')}" if hasattr(str, 'padStart') else f"TAM-{max_id_num + 1:03d}"
 
-    return jsonify({"message": "Property listed successfully", "house_id": house_id})
+        # Get landlord contact info
+        user = get_user_by_id(landlord_id)
+        phone = data.get("landlord_phone") or (user.get("phone") if user else "0241234567")
+
+        conn.execute("""
+            INSERT INTO properties (
+                house_id, neighborhood, house_type, rooms, bathrooms,
+                monthly_rent_ghs, water, electricity, compound, furnishing,
+                landlord_id, landlord_phone, show_whatsapp, show_phone,
+                available, image, title, description
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            house_id, neighborhood, house_type, rooms, bathrooms,
+            rent, data.get("water", "Available"),
+            data.get("electricity", "Prepaid"), data.get("compound", "Yes"),
+            data.get("furnishing", "Unfurnished"),
+            landlord_id, phone,
+            bool(data.get("show_whatsapp", True)),
+            bool(data.get("show_phone", True)),
+            True, image, title, description,
+        ))
+
+        created = get_property_by_id(conn, house_id)
+
+    return jsonify({"message": "Property listed successfully", "property": created, "house_id": house_id}), 201
+
+
+@app.route("/api/landlord/properties/<house_id>", methods=["PUT"])
+@role_required("landlord")
+def update_landlord_property(house_id):
+    data = request.get_json(silent=True) or {}
+    landlord_id = session["user_id"]
+
+    conn = get_connection()
+    with closing(conn), conn:
+        existing = conn.execute(
+            "SELECT landlord_id FROM properties WHERE house_id = %s", (house_id,)
+        ).fetchone()
+
+        if not existing:
+            return jsonify({"error": "Property not found."}), 404
+        if existing["landlord_id"] != landlord_id:
+            return jsonify({"error": "Forbidden: You do not own this listing."}), 403
+
+        try:
+            rent = float(data.get("monthly_rent_ghs")) if data.get("monthly_rent_ghs") is not None else None
+            rooms = int(data.get("rooms")) if data.get("rooms") is not None else None
+            bathrooms = int(data.get("bathrooms")) if data.get("bathrooms") is not None else None
+        except (ValueError, TypeError):
+            return jsonify({"error": "Rent, rooms, and bathrooms must be valid numeric values."}), 400
+
+        updates = []
+        params = []
+        if data.get("neighborhood"):
+            updates.append("neighborhood = %s")
+            params.append(data["neighborhood"].strip())
+        if data.get("house_type"):
+            updates.append("house_type = %s")
+            params.append(data["house_type"].strip())
+        if rent is not None and rent > 0:
+            updates.append("monthly_rent_ghs = %s")
+            params.append(rent)
+        if rooms is not None and rooms >= 1:
+            updates.append("rooms = %s")
+            params.append(rooms)
+        if bathrooms is not None and bathrooms >= 0:
+            updates.append("bathrooms = %s")
+            params.append(bathrooms)
+        if "water" in data:
+            updates.append("water = %s")
+            params.append(data["water"])
+        if "electricity" in data:
+            updates.append("electricity = %s")
+            params.append(data["electricity"])
+        if "compound" in data:
+            updates.append("compound = %s")
+            params.append(data["compound"])
+        if "furnishing" in data:
+            updates.append("furnishing = %s")
+            params.append(data["furnishing"])
+        if "image" in data:
+            updates.append("image = %s")
+            params.append(data["image"])
+        if "title" in data:
+            updates.append("title = %s")
+            params.append(data["title"])
+        if "description" in data:
+            updates.append("description = %s")
+            params.append(data["description"])
+        if "available" in data:
+            updates.append("available = %s")
+            params.append(bool(data["available"]))
+
+        if updates:
+            params.append(house_id)
+            conn.execute(f"UPDATE properties SET {', '.join(updates)} WHERE house_id = %s", params)
+
+        updated_property = get_property_by_id(conn, house_id)
+
+    return jsonify({"message": "Property updated successfully", "property": updated_property})
+
+
+@app.route("/api/landlord/properties/<house_id>/status", methods=["PATCH"])
+@role_required("landlord")
+def toggle_landlord_property_status(house_id):
+    data = request.get_json(silent=True) or {}
+    landlord_id = session["user_id"]
+
+    conn = get_connection()
+    with closing(conn), conn:
+        existing = conn.execute(
+            "SELECT landlord_id, available FROM properties WHERE house_id = %s", (house_id,)
+        ).fetchone()
+
+        if not existing:
+            return jsonify({"error": "Property not found."}), 404
+        if existing["landlord_id"] != landlord_id:
+            return jsonify({"error": "Forbidden: You do not own this listing."}), 403
+
+        new_status = data.get("available")
+        if new_status is None:
+            new_status = not existing["available"]
+        else:
+            new_status = bool(new_status)
+
+        conn.execute("UPDATE properties SET available = %s WHERE house_id = %s", (new_status, house_id))
+
+    return jsonify({"message": "Status updated successfully", "house_id": house_id, "available": new_status})
 
 
 @app.route("/api/landlord/properties/<house_id>", methods=["DELETE"])
+@role_required("landlord")
 def delete_landlord_property(house_id):
+    landlord_id = session["user_id"]
+
     conn = get_connection()
     with closing(conn), conn:
+        existing = conn.execute(
+            "SELECT landlord_id FROM properties WHERE house_id = %s", (house_id,)
+        ).fetchone()
+
+        if not existing:
+            return jsonify({"error": "Property not found."}), 404
+        if existing["landlord_id"] != landlord_id:
+            return jsonify({"error": "Forbidden: You do not own this listing."}), 403
+
+        conn.execute("DELETE FROM favourites WHERE house_id = %s", (house_id,))
+        conn.execute("DELETE FROM enquiries WHERE property_id = %s", (house_id,))
         conn.execute("DELETE FROM properties WHERE house_id = %s", (house_id,))
+
     return jsonify({"message": f"Listing {house_id} removed successfully"})
 
 
-# 5. Direct Enquiry API
+# 5. Enquiries Management
 @app.route("/api/enquiries", methods=["POST"])
 def post_enquiry():
-    data = request.json or {}
+    data = request.get_json(silent=True) or {}
+    property_id = data.get("property_id")
+    message = (data.get("message") or "").strip()
+
+    if not property_id or not message:
+        return jsonify({"error": "Property ID and inquiry message are required."}), 400
+
+    tenant_id = session.get("user_id")
+    tenant_name = (data.get("tenant_name") or session.get("full_name") or session.get("username") or "").strip()
+    tenant_email = (data.get("tenant_email") or session.get("email") or "").strip()
+
+    if not tenant_name or not tenant_email:
+        return jsonify({"error": "Your name and contact email are required to submit an inquiry."}), 400
+
     conn = get_connection()
-    with conn:
+    with closing(conn), conn:
+        prop = conn.execute("SELECT landlord_id FROM properties WHERE house_id = %s", (property_id,)).fetchone()
+        landlord_id = prop["landlord_id"] if prop else None
+
         conn.execute("""
-        INSERT INTO enquiries (property_id, tenant_name, tenant_email, message)
-        VALUES (%s, %s, %s, %s)
-    """, (
-        data.get("property_id"), data.get("tenant_name"),
-        data.get("tenant_email"), data.get("message")
-    ))
-    return jsonify({"message": "Enquiry submitted successfully"})
+            INSERT INTO enquiries (property_id, tenant_id, landlord_id, tenant_name, tenant_email, message)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (property_id, tenant_id, landlord_id, tenant_name, tenant_email, message))
+
+    return jsonify({"message": "Enquiry submitted successfully"}), 201
+
+
+@app.route("/api/landlord/enquiries", methods=["GET"])
+@role_required("landlord")
+def get_landlord_enquiries():
+    landlord_id = session["user_id"]
+    conn = get_connection()
+    with closing(conn), conn:
+        rows = conn.execute("""
+            SELECT
+                e.id,
+                e.property_id,
+                p.house_type,
+                p.neighborhood,
+                COALESCE(p.title, p.house_type || ' in ' || p.neighborhood) AS house_title,
+                e.tenant_name,
+                e.tenant_email,
+                e.message,
+                e.status,
+                e.created_at
+            FROM enquiries e
+            JOIN properties p ON e.property_id = p.house_id
+            WHERE e.landlord_id = %s OR p.landlord_id = %s
+            ORDER BY e.created_at DESC
+        """, (landlord_id, landlord_id)).fetchall()
+
+    enquiries = []
+    for r in rows:
+        d = dict(r)
+        if "created_at" in d and hasattr(d["created_at"], "isoformat"):
+            d["created_at"] = d["created_at"].isoformat()
+        enquiries.append(d)
+
+    return jsonify(enquiries)
+
+
+@app.route("/api/tenant/enquiries", methods=["GET"])
+@login_required
+def get_tenant_enquiries():
+    tenant_id = session["user_id"]
+    conn = get_connection()
+    with closing(conn), conn:
+        rows = conn.execute("""
+            SELECT
+                e.id,
+                e.property_id,
+                p.house_type,
+                p.neighborhood,
+                COALESCE(p.title, p.house_type || ' in ' || p.neighborhood) AS house_title,
+                e.tenant_name,
+                e.tenant_email,
+                e.message,
+                e.status,
+                e.created_at
+            FROM enquiries e
+            JOIN properties p ON e.property_id = p.house_id
+            WHERE e.tenant_id = %s
+            ORDER BY e.created_at DESC
+        """, (tenant_id,)).fetchall()
+
+    enquiries = []
+    for r in rows:
+        d = dict(r)
+        if "created_at" in d and hasattr(d["created_at"], "isoformat"):
+            d["created_at"] = d["created_at"].isoformat()
+        enquiries.append(d)
+
+    return jsonify(enquiries)
+
+
+# 6. Favourites Management (Saved Properties)
+@app.route("/api/favourites", methods=["GET"])
+@login_required
+def get_user_favourites():
+    tenant_id = session["user_id"]
+    conn = get_connection()
+    with closing(conn), conn:
+        rows = conn.execute("""
+            SELECT p.*, u.username AS owner_username, u.full_name AS owner_name
+            FROM favourites f
+            JOIN properties p ON f.house_id = p.house_id
+            LEFT JOIN users u ON p.landlord_id = u.id
+            WHERE f.tenant_id = %s
+            ORDER BY f.created_at DESC
+        """, (tenant_id,)).fetchall()
+
+    return jsonify([format_property_dict(r) for r in rows])
+
+
+@app.route("/api/favourites/<house_id>", methods=["POST"])
+@login_required
+def add_favourite(house_id):
+    tenant_id = session["user_id"]
+    conn = get_connection()
+    with closing(conn), conn:
+        conn.execute("""
+            INSERT INTO favourites (tenant_id, house_id)
+            VALUES (%s, %s)
+            ON CONFLICT (tenant_id, house_id) DO NOTHING
+        """, (tenant_id, house_id))
+    return jsonify({"message": f"Property {house_id} saved to favourites", "house_id": house_id, "saved": True})
+
+
+@app.route("/api/favourites/<house_id>", methods=["DELETE"])
+@login_required
+def remove_favourite(house_id):
+    tenant_id = session["user_id"]
+    conn = get_connection()
+    with closing(conn), conn:
+        conn.execute("DELETE FROM favourites WHERE tenant_id = %s AND house_id = %s", (tenant_id, house_id))
+    return jsonify({"message": f"Property {house_id} removed from favourites", "house_id": house_id, "saved": False})
 
 
 @app.route("/health")

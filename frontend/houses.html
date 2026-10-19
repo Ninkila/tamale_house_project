@@ -114,7 +114,7 @@
   <script src="js/main.js"></script>
   <script src="js/houses.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       const urlParams = new URLSearchParams(window.location.search);
       const urlNeighborhood = urlParams.get('neighborhood') || '';
       const urlHouseType = urlParams.get('houseType') || '';
@@ -125,22 +125,21 @@
       if (urlMaxRent) document.getElementById('filter-max-rent').value = urlMaxRent;
       if (urlRooms) document.getElementById('filter-rooms').value = urlRooms;
 
-      const houses = getHousesData();
-      applyFiltersAndRender(houses);
+      await applyFiltersAndRender();
 
       const filterForm = document.getElementById('houses-filter-form');
-      filterForm.addEventListener('submit', (e) => {
+      filterForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        applyFiltersAndRender(houses);
+        await applyFiltersAndRender();
       });
 
-      document.getElementById('btn-reset-filters').addEventListener('click', () => {
+      document.getElementById('btn-reset-filters').addEventListener('click', async () => {
         filterForm.reset();
-        applyFiltersAndRender(houses);
+        await applyFiltersAndRender();
       });
     });
 
-    function applyFiltersAndRender(houses) {
+    async function applyFiltersAndRender() {
       const criteria = {
         neighborhood: document.getElementById('filter-neighborhood').value,
         minRent: document.getElementById('filter-min-rent').value,
@@ -149,13 +148,17 @@
         bathrooms: document.getElementById('filter-bathrooms').value
       };
 
-      const filtered = filterHouses(houses, criteria);
       const grid = document.getElementById('browse-houses-grid');
       const countBadge = document.getElementById('filter-count-badge');
+      if (countBadge) countBadge.textContent = 'Searching properties...';
 
-      countBadge.textContent = `Showing ${filtered.length} matching property ${filtered.length === 1 ? 'listing' : 'listings'}`;
+      const filtered = await fetchHouses(criteria);
 
-      if (filtered.length === 0) {
+      if (countBadge) {
+        countBadge.textContent = `Showing ${filtered.length} matching property ${filtered.length === 1 ? 'listing' : 'listings'}`;
+      }
+
+      if (!filtered || filtered.length === 0) {
         grid.innerHTML = `
           <div class="empty-state" style="grid-column: 1 / -1;">
             <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/></svg>

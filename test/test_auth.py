@@ -7,6 +7,9 @@ import pytest
 from src.auth import hash_password, login_user, register_user, verify_password
 from src.database import create_users_table, get_connection
 
+from dotenv import load_dotenv
+load_dotenv()
+
 TEST_DATABASE_URL = os.environ.get("TEST_DATABASE_URL")
 requires_postgres = pytest.mark.skipif(
     not TEST_DATABASE_URL,

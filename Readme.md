@@ -1,176 +1,222 @@
 # Tamale House Market 🏠
 
-**Tamale House Market** is a house-rental platform designed to help people find rental properties in Tamale, Ghana, while providing landlords with a digital way to showcase their available properties.
+**Tamale House Market** is a full-stack house-rental platform designed to connect landlords and prospective tenants in Tamale, Ghana. It provides property seekers with a verified way to discover, filter, and inquire about residential rental properties while giving house owners and landlords tools to showcase and manage their listings.
 
-The project aims to make house hunting more accessible, organized, and convenient by bringing property listings and prospective tenants together through one platform.
-
-> **Project status:** Under development.
+---
 
 ## 🎯 The Problem
 
-Finding a house to rent in Tamale can be challenging. Prospective tenants may have difficulty discovering available properties, comparing rental prices, and connecting with landlords.
+Finding rental accommodation across Tamale is frequently time-consuming and fragmented. Prospective tenants face challenges discovering verified properties, comparing rental prices in Ghana Cedis (GH₵), and directly contacting landlords. Meanwhile, landlords often lack a centralized digital avenue to reach tenants and manage inquiries efficiently.
 
-Landlords may also lack a convenient digital platform for advertising their properties to potential tenants.
-
-Tamale House Market aims to address these challenges by creating a centralized platform for rental property discovery.
+---
 
 ## 💡 The Solution
 
-The platform is being developed to provide a digital space where:
+Tamale House Market addresses these issues with a secure, centralized web application where:
 
-* Tenants can discover available rental properties.
-* Users can explore property information and rental prices.
-* Landlords can showcase their properties.
-* Property seekers and landlords can connect more conveniently.
+* **Tenants** can search and filter rental listings by suburb/neighbourhood, rental budget, room counts, bathrooms, and water availability.
+* **Property Seekers** can save favourites, review detailed house specifications, and directly connect with landlords via WhatsApp or direct phone calls.
+* **Landlords** have dedicated portal dashboards to list properties, edit rental details, toggle active/inactive availability, and manage tenant inquiries.
+* **Secure Authentication & RBAC** ensures that sensitive property actions (creating, updating, deleting) are strictly restricted to verified listing owners.
 
-## ✨ Key Features
+---
 
-The following features represent the platform's intended functionality. Availability depends on the current development stage.
+## ✨ Features
 
-* **Property Listings:** Display rental properties and their details.
-* **House Search:** Help users find properties that match their needs.
-* **Rental Prices:** Present property prices clearly.
-* **Landlord Accounts:** Support landlord registration and authentication.
-* **Tenant Accounts:** Support tenant registration and authentication.
-* **Role-Based Access:** Distinguish between landlord and tenant permissions.
-* **Property Management:** Provide a foundation for managing rental listings.
+### Public & Tenant Experience
+* **Live Property Discovery**: Real-time browsing and filtering powered by PostgreSQL with fallback capability.
+* **Multi-Criteria Filtering**: Filter by Tamale neighbourhood (*Nyohini*, *Lamashegu*, *Dungu*, *Vittin*, *Tishegu*, *Fuo*, *Kanvilli*, *Education Ridge*, etc.), min/max rent (GH₵), room count, and bathroom count.
+* **Property Detail Pages**: Comprehensive house specifications, utility details (Prepaid/Postpaid electricity, pipe/tanker water, walled compounds), and photo previews.
+* **Direct Communication**: One-click WhatsApp link and direct phone dialer formatted for Ghana phone numbers.
+* **Tenant Dashboard**: Bookmark favourite listings and review sent direct rental enquiries.
+
+### Landlord Portal
+* **Listing Management**: Add new properties with custom rent, room specs, utilities, and photo previews.
+* **Edit & Update**: In-place modal editing to adjust prices, specifications, and listing titles.
+* **Availability Toggling**: Switch listings between active and inactive/occupied without deleting records.
+* **Inquiries Inbox**: Review incoming inquiries from prospective tenants including contact information and messages.
+* **IDOR Protection**: Backend guarantees landlords can only modify and delete their own properties.
+
+---
 
 ## 🛠️ Technology Stack
 
-The project uses or is being developed with the following technologies:
+* **Backend**: Python 3.13, Flask 3.1
+* **Database**: PostgreSQL 16
+* **Database Driver**: Psycopg 3.3 (`psycopg[binary]`)
+* **Password Hashing**: PBKDF2-HMAC-SHA256 (600,000 rounds with cryptographically secure random salts)
+* **Session Management**: Secure cookie-based Flask sessions (`HttpOnly`, `SameSite=Lax`, `Secure` in production)
+* **Frontend**: HTML5, Vanilla JavaScript, Responsive CSS3
+* **Production WSGI**: Gunicorn / Waitress
+* **Automated Testing**: Pytest 8.3
 
-* **Backend:** Python and Flask
-* **Frontend:** HTML, CSS, and JavaScript
-* **Database:** PostgreSQL
-* **Database Connectivity:** Psycopg
-* **Configuration:** Environment variables using a `.env` file
-* **Version Control:** Git and GitHub
-
-The exact technologies and components may evolve during development.
+---
 
 ## 📁 Project Structure
 
-The project structure may vary as development continues.
-
 ```text
 tamale_house_finder/
-├── frontend/       # Frontend assets and user interface
-├── src/            # Application modules and backend logic
-├── data/           # Project data and related resources
-├── .env            # Local environment variables (not committed)
-├── .gitignore      # Files excluded from version control
-└── README.md       # Project documentation
+├── data/
+│   ├── tamale_house_rentals.csv   # Initial property dataset seeded on startup
+│   └── house_data.py              # Data exploration helper
+├── frontend/                      # Static assets and views
+│   ├── css/
+│   │   ├── styles.css             # Core theme, variables & typography
+│   │   ├── dashboard.css          # Landlord & tenant dashboard layouts
+│   │   └── responsive.css         # Breakpoint rules for mobile & tablet
+│   ├── js/
+│   │   ├── main.js                # Core utility, auth sync & favourites
+│   │   ├── auth.js                # Login & registration form handlers
+│   │   ├── houses.js              # Property search & card rendering
+│   │   ├── property.js            # Property details & enquiry submission
+│   │   ├── landlord.js            # Landlord portal CRUD & modal editor
+│   │   └── tenant.js              # Tenant dashboard, saved houses & inquiries
+│   ├── landlord/                  # Landlord dashboard pages
+│   ├── tenant/                    # Tenant dashboard pages
+│   ├── index.html                 # Homepage with hero search & featured listings
+│   ├── houses.html                # Browse & search listings page
+│   ├── property.html              # Individual listing details page
+│   ├── login.html                 # User authentication login
+│   ├── register.html              # Role-based user registration
+│   ├── about.html                 # Platform standards & mission
+│   └── contact.html               # Platform support contact page
+├── src/
+│   ├── auth.py                    # Password hashing, verification & user queries
+│   ├── database.py                # PostgreSQL schema, migrations, and query builders
+│   └── house_search.py            # Pandas-based search logic fallback
+├── test/
+│   ├── test_api_endpoints.py      # Integration tests for auth sessions, landlord CRUD, favourites & enquiries
+│   ├── test_auth.py               # Unit & integration tests for password hashing & registration
+│   └── test_house_logic.py        # Logic tests for rental budget & house filtering
+├── .env.example                   # Example environment configuration template
+├── .gitignore                     # Git exclusion rules
+├── DATABASE.md                    # Database documentation
+├── docker-compose.yml             # Local PostgreSQL service container
+├── requirements.txt               # Python package dependencies
+├── server.py                      # Flask REST API entry point
+└── wsgi.py                        # Production WSGI application wrapper
 ```
+
+---
 
 ## ⚙️ Getting Started
 
 ### Prerequisites
 
-Install the following before running the application:
-
-* Python 3
-* PostgreSQL
+* Python 3.10+
+* PostgreSQL 14+ (or Docker Desktop)
 * Git
 
-A code editor such as Visual Studio Code is recommended.
-
-### 1. Clone the repository
+### 1. Clone & Navigate
 
 ```bash
-git clone 'https://github.com/Ninkila/tamale_house_project'
-```
-
-### 2. Navigate to the project directory
-
-```bash
+git clone https://github.com/Ninkila/tamale_house_project.git
 cd tamale_house_finder
 ```
 
-### 3. Create a virtual environment
+### 2. Set Up Virtual Environment
 
 ```bash
 python -m venv .venv
-```
-
-### 4. Activate the virtual environment
-
-On Windows PowerShell:
-
-```powershell
+# On Windows PowerShell:
 .\.venv\Scripts\Activate.ps1
+# On Linux/macOS:
+source .venv/bin/activate
 ```
 
-### 5. Install dependencies
-
-Install the dependencies listed in the project's dependency file.
-
-If a `requirements.txt` file exists, run:
+### 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 6. Configure environment variables
+### 4. Configure Environment Variables
 
-Create a local `.env` file and configure the required environment variables.
+Copy `.env.example` to `.env`:
 
-For example, the application may require a PostgreSQL connection string and other application settings.
+```bash
+cp .env.example .env
+```
 
-**Important:** Never commit real database passwords, secret keys, or other credentials to GitHub.
+Edit `.env` to configure your PostgreSQL credentials:
 
-### 7. Configure the database
+```ini
+FLASK_ENV=development
+SECRET_KEY=replace-with-a-random-secret-key
+DATABASE_URL=postgresql://tamale_user:tamale_dev_password@localhost:5432/tamale_house_market
+TEST_DATABASE_URL=postgresql://tamale_user:tamale_dev_password@localhost:5432/tamale_house_market_test
+```
 
-Ensure PostgreSQL is running and the required database exists.
+### 5. Start PostgreSQL
 
-Configure the database connection using the environment variables expected by the application.
+Using Docker Compose:
 
-Initialize the database using the project's existing setup process.
+```bash
+docker compose up -d db
+```
 
-### 8. Run the application
+Or connect to an existing local/remote PostgreSQL instance with the configured `DATABASE_URL`.
 
-Start the Flask application using the project's configured entry point.
+### 6. Run the Application
 
-Consult the application code for the correct startup command.
+```bash
+python server.py
+```
 
-## 🔐 Security
+Open [http://localhost:5000](http://localhost:5000) in your web browser. The database schema and seed data are automatically initialized on startup.
 
-Security is an important consideration for a platform involving user accounts and property information.
+---
 
-Development priorities include:
+## 🧪 Running Automated Tests
 
-* Secure password storage.
-* Authentication and authorization.
-* Role-based access control.
-* Environment-based configuration.
-* Protection of database credentials.
-* Validation of user input.
+Run the complete test suite with:
 
-## 🚧 Development Roadmap
+```bash
+pytest -v
+```
 
-Potential areas for continued development include:
+Tests run against the isolated test database configured in `TEST_DATABASE_URL` so that existing development or production data is never modified or reset.
 
-* [ ] Complete the tenant-facing interface.
-* [ ] Complete the landlord dashboard.
-* [ ] Improve property search and filtering.
-* [ ] Implement property listing management.
-* [ ] Strengthen authentication and authorization.
-* [ ] Improve mobile responsiveness.
-* [ ] Add property images and detailed descriptions.
-* [ ] Test the application and improve error handling.
-* [ ] Prepare the application for deployment.
+---
 
-The checklist should be updated as features are implemented.
+## 🚀 Deployment Guide
 
-## 🌍 Vision
+### Environment Variables for Production
 
-The long-term vision of Tamale House Market is to make finding and advertising rental properties in Tamale easier through technology, with the potential to expand to other locations in Ghana.
+| Variable | Description | Example |
+| :--- | :--- | :--- |
+| `FLASK_ENV` | Application environment (`production` enables secure cookies) | `production` |
+| `SECRET_KEY` | High-entropy secret for signing session cookies | Generated random string |
+| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/dbname` |
+| `PORT` | Listening port (defaults to 5000) | `5000` |
+| `HOST` | Bind host | `0.0.0.0` |
 
-## 👨‍💻 Contributing
+### Running with a Production WSGI Server
 
-The project is currently under development.
+On Linux (e.g., Render, Railway, DigitalOcean, AWS):
 
-Suggestions, feedback, and contributions that improve the platform's usability, security, and reliability are welcome.
+```bash
+gunicorn --bind 0.0.0.0:5000 wsgi:app
+```
+
+On Windows:
+
+```bash
+waitress-serve --port=5000 wsgi:app
+```
+
+---
+
+## 🔒 Security Practices
+
+* **Server-Side Validation**: All registration, property listing, and enquiry requests validate fields on the backend.
+* **Parameterized Queries**: Every SQL query uses `%s` psycopg parameterization to guard against SQL injection.
+* **Session Security**: Cookies are flagged `HttpOnly`, `SameSite=Lax`, and `Secure` in production.
+* **Role-Based Access Control**: Sensitive landlord actions require authenticated landlord sessions; tenants cannot perform landlord actions.
+* **Repository Hygiene**: Sensitive `.env` files, virtual environments, local SQLite caches, and test artifacts are strictly excluded by `.gitignore`.
+
+---
 
 ## 📄 License
 
-No license has been specified yet.
+Tamale House Market is released under the MIT License.

@@ -1,6 +1,8 @@
 import hashlib
 import hmac
 import secrets
+from contextlib import closing
+
 import psycopg
 
 from src.database import get_connection
@@ -32,7 +34,7 @@ def verify_password(password, stored_hash):
     return hmac.compare_digest(digest, expected)
 
 
-def register_user(username, email, password, role="tenant", full_name=None):
+def register_user(username, email, password, role="tenant", full_name=None, phone="0241234567"):
     if not all(isinstance(value, str) for value in (username, email, password)):
         return False
     username = (username or "").strip()
@@ -55,10 +57,10 @@ def register_user(username, email, password, role="tenant", full_name=None):
 
         connection.execute(
             """
-            INSERT INTO users (username, email, password_hash, role, full_name)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO users (username, email, password_hash, role, full_name, phone)
+            VALUES (%s, %s, %s, %s, %s, %s)
             """,
-            (username, email, hash_password(password), role, (full_name or username).strip()),
+            (username, email, hash_password(password), role, (full_name or username).strip(), (phone or "0241234567").strip()),
         )
         connection.commit()
         return True
@@ -79,7 +81,7 @@ def login_user(username, password):
     try:
         user = connection.execute(
             """
-            SELECT id, username, email, password_hash, role, full_name
+            SELECT id, username, email, password_hash, role, full_name, phone, show_whatsapp, show_phone
             FROM users
             WHERE lower(username) = lower(%s) OR lower(email) = lower(%s)
             """,
@@ -95,7 +97,63 @@ def login_user(username, password):
             "email": user["email"],
             "role": user["role"],
             "full_name": user["full_name"] or user["username"],
+            "phone": user.get("phone") or "0241234567",
+            "show_whatsapp": user.get("show_whatsapp") if user.get("show_whatsapp") is not None else True,
+            "show_phone": user.get("show_phone") if user.get("show_phone") is not None else True,
         }
 
     finally:
         connection.close()
+
+
+def get_user_by_id(user_id):
+    if not user_id:
+        return None
+    with closing(get_connection()) as connection, connection:
+        user = connection.execute(
+            """
+            SELECT id, username, email, role, full_name, phone, show_whatsapp, show_phone, created_at
+            FROM users
+            WHERE id = %s
+            """,
+            (int(user_id),),
+        ).fetchone()
+        if not user:
+            return None
+        return {
+            "id": user["id"],
+            "username": user["username"],
+            "email": user["email"],
+            "role": user["role"],
+            "full_name": user["full_name"] or user["username"],
+            "phone": user.get("phone") or "0241234567",
+            "show_whatsapp": user.get("show_whatsapp") if user.get("show_whatsapp") is not None else True,
+            "show_phone": user.get("show_phone") if user.get("show_phone") is not None else True,
+        }
+
+
+def update_user_profile(user_id, full_name=None, phone=None, show_whatsapp=None, show_phone=None):
+    if not user_id:
+        return None
+    with closing(get_connection()) as connection, connection:
+        updates = []
+        params = []
+        if full_name is not None:
+            updates.append("full_name = %s")
+            params.append(str(full_name).strip())
+        if phone is not None:
+            updates.append("phone = %s")
+            params.append(str(phone).strip())
+        if show_whatsapp is not None:
+            updates.append("show_whatsapp = %s")
+            params.append(bool(show_whatsapp))
+        if show_phone is not None:
+            updates.append("show_phone = %s")
+            params.append(bool(show_phone))
+
+        if not updates:
+            return get_user_by_id(user_id)
+
+        params.append(int(user_id))
+        connection.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = %s", params)
+        return get_user_by_id(user_id)

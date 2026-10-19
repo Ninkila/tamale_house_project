@@ -8,10 +8,12 @@ const SAVED_FAVOURITES_KEY = 'thm_saved_favourites';
 const ENQUIRIES_KEY = 'thm_enquiries_list';
 
 // Global Initializer
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   initNavigation();
   updateUserNavUI();
   initPasswordToggles();
+  await syncCurrentUserWithServer();
+  await syncFavouritesWithServer();
 });
 
 function initPasswordToggles() {
@@ -80,10 +82,38 @@ function getCurrentUser() {
 }
 
 function setCurrentUser(user) {
-  localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+  if (user) {
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(CURRENT_USER_KEY);
+  }
 }
 
-function logoutUser() {
+async function syncCurrentUserWithServer() {
+  try {
+    const res = await fetch('/api/auth/me');
+    if (res.ok) {
+      const data = await res.json();
+      if (data.authenticated && data.user) {
+        setCurrentUser(data.user);
+        updateUserNavUI();
+        return data.user;
+      } else {
+        localStorage.removeItem(CURRENT_USER_KEY);
+        updateUserNavUI();
+        return null;
+      }
+    }
+  } catch (e) {
+    // Offline or server temporarily unreachable
+  }
+  return getCurrentUser();
+}
+
+async function logoutUser() {
+  try {
+    await fetch('/api/auth/logout', { method: 'POST' });
+  } catch (e) {}
   localStorage.removeItem(CURRENT_USER_KEY);
   const isDashboard = window.location.pathname.includes('/landlord/') || window.location.pathname.includes('/tenant/');
   if (isDashboard) {
@@ -100,13 +130,15 @@ function updateUserNavUI() {
   if (!navActions) return;
 
   if (user) {
-    const dashboardPath = user.role === 'landlord' ? 'landlord/dashboard.html' : 'tenant/dashboard.html';
-    const relPath = window.location.pathname.includes('/landlord/') || window.location.pathname.includes('/tenant/') ? '#' : dashboardPath;
+    const isInsidePortal = window.location.pathname.includes('/landlord/') || window.location.pathname.includes('/tenant/');
+    const dashboardPath = user.role === 'landlord'
+      ? (isInsidePortal ? 'dashboard.html' : 'landlord/dashboard.html')
+      : (isInsidePortal ? 'dashboard.html' : 'tenant/dashboard.html');
 
     navActions.innerHTML = `
-      <a href="${relPath}" class="btn btn-outline btn-sm">
+      <a href="${dashboardPath}" class="btn btn-outline btn-sm">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        ${user.full_name || user.username} (${user.role.toUpperCase()})
+        ${escapeHTML(user.full_name || user.username)} (${escapeHTML(user.role.toUpperCase())})
       </a>
       <button onclick="logoutUser()" class="btn btn-primary btn-sm">Logout</button>
     `;
@@ -129,7 +161,7 @@ function handleContactClick(e) {
 
 // WhatsApp Link Generator
 function formatGhanaPhone(phone) {
-  if (!phone) return null;
+  if (!phone) return '233241234567';
   let clean = phone.replace(/[^0-9]/g, '');
   if (clean.startsWith('0')) {
     clean = '233' + clean.substring(1);
@@ -141,18 +173,18 @@ function formatGhanaPhone(phone) {
 }
 
 function generateWhatsAppLink(phone, houseTitle, houseId) {
-  const formattedPhone = formatGhanaPhone(phone || '0240000000');
+  const formattedPhone = formatGhanaPhone(phone || '0241234567');
   const textMessage = `Hello, I found your property "${houseTitle}" (Ref ID: ${houseId}) on Tamale House Market and I would like to inquire about its availability and arrange a viewing.`;
   const encodedMsg = encodeURIComponent(textMessage);
   return `https://wa.me/${formattedPhone}?text=${encodedMsg}`;
 }
 
 function generatePhoneLink(phone) {
-  const cleanPhone = (phone || '0240000000').replace(/[^0-9+]/g, '');
+  const cleanPhone = (phone || '0241234567').replace(/[^0-9+]/g, '');
   return `tel:${cleanPhone}`;
 }
 
-// Saved Properties (Favourites) Manager - Requires Authentication
+// Saved Properties (Favourites) Manager
 function favKey() {
   const u = getCurrentUser();
   return u ? `${SAVED_FAVOURITES_KEY}_${u.username}` : SAVED_FAVOURITES_KEY;
@@ -162,7 +194,20 @@ function getSavedFavourites() {
   try { return JSON.parse(localStorage.getItem(favKey()) || '[]'); } catch (e) { return []; }
 }
 
-function toggleFavourite(houseId) {
+async function syncFavouritesWithServer() {
+  const user = getCurrentUser();
+  if (!user) return;
+  try {
+    const res = await fetch('/api/favourites');
+    if (res.ok) {
+      const favList = await res.json();
+      const ids = favList.map(h => h.house_id);
+      localStorage.setItem(favKey(), JSON.stringify(ids));
+    }
+  } catch (e) {}
+}
+
+async function toggleFavourite(houseId) {
   const user = getCurrentUser();
   if (!user) {
     alert('Account Required: You must create an account or log in to save properties to your favourites list.');
@@ -173,15 +218,30 @@ function toggleFavourite(houseId) {
 
   let favourites = getSavedFavourites();
   const index = favourites.indexOf(houseId);
+  const isCurrentlySaved = index >= 0;
 
-  if (index >= 0) {
-    favourites.splice(index, 1);
-    localStorage.setItem(favKey(), JSON.stringify(favourites));
-    return false;
-  } else {
-    favourites.push(houseId);
-    localStorage.setItem(favKey(), JSON.stringify(favourites));
-    return true;
+  try {
+    if (isCurrentlySaved) {
+      await fetch(`/api/favourites/${encodeURIComponent(houseId)}`, { method: 'DELETE' });
+      favourites.splice(index, 1);
+      localStorage.setItem(favKey(), JSON.stringify(favourites));
+      return false;
+    } else {
+      await fetch(`/api/favourites/${encodeURIComponent(houseId)}`, { method: 'POST' });
+      favourites.push(houseId);
+      localStorage.setItem(favKey(), JSON.stringify(favourites));
+      return true;
+    }
+  } catch (e) {
+    if (isCurrentlySaved) {
+      favourites.splice(index, 1);
+      localStorage.setItem(favKey(), JSON.stringify(favourites));
+      return false;
+    } else {
+      favourites.push(houseId);
+      localStorage.setItem(favKey(), JSON.stringify(favourites));
+      return true;
+    }
   }
 }
 
@@ -192,10 +252,10 @@ function isFavourite(houseId) {
 
 // Format Currency
 function formatGHS(amount) {
-  return `GH₵ ${Number(amount).toLocaleString('en-GH')}`;
+  return `GH₵ ${Number(amount || 0).toLocaleString('en-GH')}`;
 }
 
-// ---- Shared helpers ----
+// Shared helpers
 function escapeHTML(v) {
   return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -204,12 +264,11 @@ function safeParse(key, fallback) {
   try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch (e) { return fallback; }
 }
 
-// Availability is its own flag; older records fall back to the water field
 function isHouseAvailable(h) {
-  return typeof h.available === 'boolean' ? h.available : h.water === 'Available';
+  if (typeof h.available === 'boolean') return h.available;
+  return h.water === 'Available';
 }
 
-// Collision-safe ID (survives deletions)
 function nextHouseId(houses) {
   const max = houses.reduce((m, h) => {
     const n = parseInt(String(h.house_id).replace(/\D/g, ''), 10);

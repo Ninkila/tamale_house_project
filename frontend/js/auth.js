@@ -122,7 +122,7 @@ function initRegisterForm() {
     // Backend handled it: never store credentials locally
     if (response && response.ok) {
       const created = await response.json().catch(() => null);
-      const user = created && created.role ? created : { username, full_name: fullName, email, role };
+      const user = (created && created.user) || (created && created.role ? created : { username, full_name: fullName, email, role });
       setCurrentUser(user);
       redirectUserDashboard(user.role);
       return;

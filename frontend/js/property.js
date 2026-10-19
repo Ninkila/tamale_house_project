@@ -8,16 +8,45 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-function initPropertyDetailsPage() {
+async function initPropertyDetailsPage() {
   const urlParams = new URLSearchParams(window.location.search);
   const houseId = urlParams.get('id') || 'TAM-001';
+  const container = document.getElementById('property-details-container');
 
-  const houses = getHousesData();
-  const house = houses.find(h => h.house_id === houseId);
+  if (container) {
+    container.innerHTML = `
+      <div style="text-align:center; padding: 4rem 1rem;">
+        <p style="color:var(--text-muted); font-size:1.1rem;">Loading property details...</p>
+      </div>
+    `;
+  }
+
+  let house = null;
+  try {
+    const res = await fetch(`/api/houses/${encodeURIComponent(houseId)}`);
+    if (res.ok) {
+      house = await res.json();
+    }
+  } catch (err) {
+    console.warn('Backend unavailable, trying cached data.', err);
+  }
 
   if (!house) {
-    const c = document.getElementById('property-details-container');
-    if (c) c.innerHTML = `<div class="empty-state"><h3>Listing Not Found</h3><p>This property may have been removed.</p><a href="houses.html" class="btn btn-primary">Browse Houses</a></div>`;
+    const houses = getHousesData();
+    house = houses.find(h => h.house_id === houseId);
+  }
+
+  if (!house) {
+    if (container) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <svg class="empty-state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/><path d="M8 11h6"/></svg>
+          <h3>Listing Not Found</h3>
+          <p>This property could not be found or may have been removed by the landlord.</p>
+          <a href="houses.html" class="btn btn-primary" style="margin-top:1rem;">Browse Available Houses</a>
+        </div>
+      `;
+    }
     return;
   }
 
@@ -32,44 +61,51 @@ function renderPropertyDetails(house) {
   const waUrl = generateWhatsAppLink(house.landlord_phone, `${house.house_type} in ${house.neighborhood}`, house.house_id);
   const telUrl = generatePhoneLink(house.landlord_phone);
   const isSaved = isFavourite(house.house_id);
+  const displayImage = house.image || 'https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=800&q=80';
+  const titleText = house.title || `${house.house_type} in ${house.neighborhood}`;
+  const ownerDisplay = house.owner_name || house.owner_username || 'Landlord Representative';
+  const distance = house.distance_from_central_tamale_km != null ? `• ${house.distance_from_central_tamale_km} km from Central Tamale` : '';
+  const isAvail = isHouseAvailable(house);
 
   container.innerHTML = `
     <div class="property-detail-header" style="margin-bottom: 2rem;">
       <div class="property-title-row">
         <div>
-          <h1 style="font-size: 2.2rem; font-weight: 800; color: var(--primary);">${escapeHTML(house.house_type)} in ${escapeHTML(house.neighborhood)}</h1>
+          <h1 style="font-size: 2.2rem; font-weight: 800; color: var(--primary);">${escapeHTML(titleText)}</h1>
           <p style="color: var(--text-muted); font-size: 1.05rem; display:flex; align-items:center; gap:0.5rem; margin-top:0.35rem;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
-            ${escapeHTML(house.neighborhood)}, Tamale • ${house.distance_from_central_tamale_km} km from Central Tamale
+            ${escapeHTML(house.neighborhood)}, Tamale ${escapeHTML(distance)}
           </p>
         </div>
         <div class="property-price-summary">
           <div style="font-size: 2.2rem; font-weight: 800; color: var(--primary);">${formatGHS(house.monthly_rent_ghs)} <span style="font-size:1rem; color:var(--text-muted); font-weight:500;">/ month</span></div>
-          <span class="badge-status-pill status-active" style="margin-top:0.35rem;">Verified Rental Listing</span>
+          <span class="badge-status-pill ${isAvail ? 'status-active' : 'status-inactive'}" style="margin-top:0.35rem;">
+            ${isAvail ? 'Verified Available Listing' : 'Currently Unavailable'}
+          </span>
         </div>
       </div>
     </div>
 
     <div class="property-detail-grid">
       <div>
-        <div class="property-detail-image">
-          <img src="${escapeHTML(house.image)}" alt="${escapeHTML(house.house_type)}" style="width:100%; height:100%; object-fit:cover;" />
+        <div class="property-detail-image" style="background:#E2E8F0; border-radius:var(--radius-lg); overflow:hidden; min-height:380px;">
+          <img src="${escapeHTML(displayImage)}" alt="${escapeHTML(titleText)}" style="width:100%; height:100%; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?auto=format&fit=crop&w=800&q=80'" />
         </div>
 
-        <div class="property-overview-card">
+        <div class="property-overview-card" style="margin-top:2rem;">
           <h2 style="font-size: 1.4rem; color: var(--primary); margin-bottom: 1rem;">Property Overview</h2>
           <p style="color: var(--text-main); line-height: 1.7; margin-bottom: 1.5rem;">
-            A beautiful, well-maintained ${escapeHTML(house.house_type.toLowerCase())} located in the serene neighbourhood of ${escapeHTML(house.neighborhood)}, Tamale. Ideal for working professionals or small families seeking comfort, accessibility, and peace of mind.
+            ${escapeHTML(house.description || `A comfortable, well-maintained ${house.house_type.toLowerCase()} located in the residential neighbourhood of ${house.neighborhood}, Tamale. Features reliable utilities, peaceful surroundings, and convenient road access to Central Tamale.`)}
           </p>
 
           <h3 style="font-size: 1.15rem; color: var(--primary); margin-bottom: 1rem;">Key Specifications</h3>
           <div class="property-specifications">
             <div><strong>Rooms:</strong> ${house.rooms} Bedrooms/Rooms</div>
             <div><strong>Bathrooms:</strong> ${house.bathrooms} Baths</div>
-            <div><strong>Furnishing:</strong> ${escapeHTML(house.furnishing)}</div>
-            <div><strong>Water Supply:</strong> ${escapeHTML(house.water)}</div>
-            <div><strong>Electricity:</strong> ${escapeHTML(house.electricity)}</div>
-            <div><strong>Walled Compound:</strong> ${escapeHTML(house.compound)}</div>
+            <div><strong>Furnishing:</strong> ${escapeHTML(house.furnishing || 'Unfurnished')}</div>
+            <div><strong>Water Supply:</strong> ${escapeHTML(house.water || 'Available')}</div>
+            <div><strong>Electricity:</strong> ${escapeHTML(house.electricity || 'Prepaid')}</div>
+            <div><strong>Walled Compound:</strong> ${escapeHTML(house.compound || 'Yes')}</div>
           </div>
         </div>
       </div>
@@ -81,10 +117,10 @@ function renderPropertyDetails(house) {
           
           <div style="display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; padding-bottom:1.25rem; border-bottom:1px solid var(--border-color);">
             <div style="width:52px; height:52px; border-radius:var(--radius-full); background-color:var(--primary); color:var(--accent); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.25rem;">
-              LM
+              ${escapeHTML((ownerDisplay.substring(0, 2)).toUpperCase())}
             </div>
             <div>
-              <div style="font-weight:700; color:var(--primary); font-size:1.05rem;">Landlord Representative</div>
+              <div style="font-weight:700; color:var(--primary); font-size:1.05rem;">${escapeHTML(ownerDisplay)}</div>
               <div style="font-size:0.85rem; color:var(--text-muted);">Tamale House Market Verified</div>
             </div>
           </div>
@@ -104,15 +140,32 @@ function renderPropertyDetails(house) {
               Send Direct Enquiry
             </button>
 
-            <button onclick="handleFavClick(event, '${house.house_id}')" class="btn btn-outline btn-full" style="margin-top:0.5rem;">
+            <button id="detail-fav-btn" onclick="handleDetailFavClick(event, '${escapeHTML(house.house_id)}')" class="btn btn-outline btn-full" style="margin-top:0.5rem;">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="${isSaved ? '#EF4444' : 'none'}" stroke="${isSaved ? '#EF4444' : 'currentColor'}" stroke-width="2"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
-              ${isSaved ? 'Saved to Favourites' : 'Save Property'}
+              <span id="detail-fav-label">${isSaved ? 'Saved to Favourites' : 'Save Property'}</span>
             </button>
           </div>
         </div>
       </div>
     </div>
   `;
+}
+
+async function handleDetailFavClick(e, houseId) {
+  e.preventDefault();
+  const added = await toggleFavourite(houseId);
+  const btn = document.getElementById('detail-fav-btn');
+  const label = document.getElementById('detail-fav-label');
+  if (btn) {
+    const svg = btn.querySelector('svg');
+    if (svg) {
+      svg.setAttribute('fill', added ? '#EF4444' : 'none');
+      svg.setAttribute('stroke', added ? '#EF4444' : 'currentColor');
+    }
+    if (label) {
+      label.textContent = added ? 'Saved to Favourites' : 'Save Property';
+    }
+  }
 }
 
 function handleEnquiryBtnClick(e) {
@@ -136,7 +189,11 @@ function initEnquiryModal(house) {
 
   const form = document.getElementById('enquiry-form');
   if (form) {
-    form.addEventListener('submit', (e) => {
+    // Avoid attaching duplicate event listeners
+    const newForm = form.cloneNode(true);
+    form.parentNode.replaceChild(newForm, form);
+
+    newForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       const user = getCurrentUser();
       if (!user) {
@@ -144,29 +201,60 @@ function initEnquiryModal(house) {
         window.location.href = 'login.html';
         return;
       }
-      const name = document.getElementById('enquiry-name').value;
-      const email = document.getElementById('enquiry-email').value;
-      const message = document.getElementById('enquiry-message').value;
+      const name = document.getElementById('enquiry-name').value.trim();
+      const email = document.getElementById('enquiry-email').value.trim();
+      const message = document.getElementById('enquiry-message').value.trim();
 
-      const newEnquiry = {
-        id: 'ENQ-' + Date.now(),
-        house_id: house.house_id,
-        house_title: `${house.house_type} in ${house.neighborhood}`,
-        tenant_name: name,
-        tenant_email: email,
-        tenant_username: user.username,
-        message: message,
-        date: new Date().toLocaleDateString(),
-        status: 'Pending'
-      };
+      if (!name || !email || !message) {
+        alert('Please fill in your name, contact email, and inquiry message.');
+        return;
+      }
 
-      const list = safeParse(ENQUIRIES_KEY, []);
-      list.push(newEnquiry);
-      localStorage.setItem(ENQUIRIES_KEY, JSON.stringify(list));
+      const submitBtn = newForm.querySelector('button[type="submit"]');
+      if (submitBtn) submitBtn.disabled = true;
 
-      alert('Enquiry submitted successfully! Landlord will review your request.');
-      closeEnquiryModal();
-      form.reset();
+      try {
+        const res = await fetch('/api/enquiries', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            property_id: house.house_id,
+            tenant_name: name,
+            tenant_email: email,
+            message: message,
+          }),
+        });
+
+        if (res.ok) {
+          alert('Enquiry submitted successfully! The landlord will review your request.');
+          closeEnquiryModal();
+          newForm.reset();
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          alert(errData.error || 'Failed to submit enquiry. Please try again.');
+        }
+      } catch (err) {
+        // Fallback local persistence
+        const newEnquiry = {
+          id: 'ENQ-' + Date.now(),
+          house_id: house.house_id,
+          house_title: `${house.house_type} in ${house.neighborhood}`,
+          tenant_name: name,
+          tenant_email: email,
+          tenant_username: user.username,
+          message: message,
+          date: new Date().toLocaleDateString(),
+          status: 'Pending'
+        };
+        const list = safeParse(ENQUIRIES_KEY, []);
+        list.push(newEnquiry);
+        localStorage.setItem(ENQUIRIES_KEY, JSON.stringify(list));
+        alert('Enquiry submitted! The landlord will review your request.');
+        closeEnquiryModal();
+        newForm.reset();
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
+      }
     });
   }
 }
