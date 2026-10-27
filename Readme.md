@@ -179,21 +179,44 @@ Tests run against the isolated test database configured in `TEST_DATABASE_URL` s
 
 ---
 
-## 🚀 Deployment Guide
+## 🚀 Deployment Guide (Render)
+
+### Deploying to Render
+
+This project includes a production blueprint specification (`render.yaml`) for one-click deployment on [Render](https://render.com).
+
+1. **Connect Repository**: Link your GitHub repository (`Ninkila/tamale_house_project`) to your Render account.
+2. **New Blueprint**: Go to **Blueprints** on Render and select this repository.
+3. **Automatic Provisioning**: Render will automatically:
+   * Create a managed PostgreSQL database (`tamale_house_market`).
+   * Provision the Python Web Service with `pip install -r requirements.txt`.
+   * Configure the startup command: `gunicorn wsgi:app`.
+   * Automatically generate a secure, high-entropy `SECRET_KEY`.
+   * Wire `DATABASE_URL` from the provisioned database.
+4. **Health Check**: Set health check path to `/health`.
 
 ### Environment Variables for Production
 
-| Variable | Description | Example |
-| :--- | :--- | :--- |
-| `FLASK_ENV` | Application environment (`production` enables secure cookies) | `production` |
-| `SECRET_KEY` | High-entropy secret for signing session cookies | Generated random string |
-| `DATABASE_URL` | PostgreSQL connection string | `postgresql://user:pass@host:5432/dbname` |
-| `PORT` | Listening port (defaults to 5000) | `5000` |
-| `HOST` | Bind host | `0.0.0.0` |
+| Variable | Description | Requirement | Example |
+| :--- | :--- | :--- | :--- |
+| `FLASK_ENV` | Application environment mode | Optional (`production` default) | `production` |
+| `SECRET_KEY` | High-entropy secret for signing session cookies | **Required** (Refuses boot if missing in production) | Generated random 32+ char string |
+| `DATABASE_URL` | PostgreSQL connection string | **Required** | `postgresql://user:pass@host:5432/dbname` |
+| `PORT` | Listening port (Render provides automatically) | Optional (defaults to 5000) | `10000` |
+| `SESSION_COOKIE_SECURE` | Enforces HTTPS-only cookies | Optional (defaults to `true` in production) | `true` |
 
-### Running with a Production WSGI Server
+> [!IMPORTANT]
+> **Secret Key Invalidation Note**: Updating or rotating `SECRET_KEY` invalidates any existing cookie sessions signed with the previous key. Users will simply be prompted to log in again upon their next visit.
 
-On Linux (e.g., Render, Railway, DigitalOcean, AWS):
+### Health Check Endpoint
+
+* `GET /health`
+  * Returns `200 OK` with `{"status": "ok", "database": "ready"}` when the app and PostgreSQL connection are live.
+  * Returns `503 Service Unavailable` with `{"status": "degraded", "database": "unavailable"}` if PostgreSQL is unreachable.
+
+### Running with a Production WSGI Server Locally
+
+On Linux / macOS:
 
 ```bash
 gunicorn --bind 0.0.0.0:5000 wsgi:app

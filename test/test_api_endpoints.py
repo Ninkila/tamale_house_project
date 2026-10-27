@@ -193,3 +193,170 @@ def test_enquiries_and_favourites(test_client):
     assert unfav_res.status_code == 200
     favs_after = test_client.get("/api/favourites").get_json()
     assert not any(h["house_id"] == target_house_id for h in favs_after)
+
+
+def test_production_secret_enforcement(monkeypatch):
+    from flask import Flask
+    from server import init_security_config
+
+    dummy_app = Flask("test_sec")
+
+    # 1. Missing secret in production must raise RuntimeError
+    monkeypatch.setenv("FLASK_ENV", "production")
+    monkeypatch.delenv("SECRET_KEY", raising=False)
+    with pytest.raises(RuntimeError, match="Production requires a strong SECRET_KEY"):
+        init_security_config(dummy_app)
+
+    # 2. Insecure legacy secret in production must raise RuntimeError
+    monkeypatch.setenv("SECRET_KEY", "mimi121269reed")
+    with pytest.raises(RuntimeError, match="Production requires a strong SECRET_KEY"):
+        init_security_config(dummy_app)
+
+    # 3. Short secret in production must raise RuntimeError
+    monkeypatch.setenv("SECRET_KEY", "too_short")
+    with pytest.raises(RuntimeError, match="Production requires a strong SECRET_KEY"):
+        init_security_config(dummy_app)
+
+    # 4. Valid strong secret in production configures Secure cookies
+    monkeypatch.setenv("SECRET_KEY", "a-very-strong-production-secret-key-32chars!!")
+    is_prod = init_security_config(dummy_app)
+    assert is_prod is True
+    assert dummy_app.config["SECRET_KEY"] == "a-very-strong-production-secret-key-32chars!!"
+    assert dummy_app.config["SESSION_COOKIE_HTTPONLY"] is True
+    assert dummy_app.config["SESSION_COOKIE_SAMESITE"] == "Lax"
+    assert dummy_app.config["SESSION_COOKIE_SECURE"] is True
+
+    # 5. In development mode, fallback is allowed and cookies are not Secure
+    monkeypatch.setenv("FLASK_ENV", "development")
+    monkeypatch.delenv("SECRET_KEY", raising=False)
+    is_prod_dev = init_security_config(dummy_app)
+    assert is_prod_dev is False
+    assert dummy_app.config["SESSION_COOKIE_SECURE"] is False
+
+
+@requires_postgres
+def test_health_check_endpoint(test_client):
+    res = test_client.get("/health")
+    assert res.status_code == 200
+    data = res.get_json()
+    assert data["status"] == "ok"
+    assert data["database"] == "ready"
+
+
+@requires_postgres
+def test_enquiry_and_favourite_nonexistent_property(test_client):
+    suffix = uuid.uuid4().hex
+    username = f"user_{suffix}"
+    email = f"{username}@example.com"
+
+    # Register tenant
+    test_client.post("/api/auth/register", json={
+        "username": username,
+        "email": email,
+        "password": "password123",
+        "role": "tenant",
+    })
+
+    # Enquiry for non-existent house should return 404
+    enq_res = test_client.post("/api/enquiries", json={
+        "property_id": "TAM-NONEXISTENT-9999",
+        "message": "Hello",
+    })
+    assert enq_res.status_code == 404
+
+    # Favourite non-existent house should return 404
+    fav_res = test_client.post("/api/favourites/TAM-NONEXISTENT-9999")
+    assert fav_res.status_code == 404
+
+
+@requires_postgres
+def test_landlord_enquiry_privacy_isolation(test_client):
+    suffix1 = uuid.uuid4().hex
+    suffix2 = uuid.uuid4().hex
+
+    landlord_a = f"landlord_a_{suffix1}"
+    landlord_b = f"landlord_b_{suffix2}"
+    tenant_user = f"tenant_{suffix1}"
+
+    # Register Landlord A and add a property
+    test_client.post("/api/auth/register", json={
+        "username": landlord_a,
+        "email": f"{landlord_a}@example.com",
+        "password": "password123",
+        "role": "landlord",
+    })
+    add_res = test_client.post("/api/landlord/properties", json={
+        "neighborhood": "Katariga",
+        "house_type": "3 Bedroom",
+        "monthly_rent_ghs": 2200,
+        "rooms": 3,
+        "bathrooms": 2,
+    })
+    assert add_res.status_code == 201
+    house_id = add_res.get_json()["house_id"]
+
+    # Register Tenant and send enquiry to Landlord A's property
+    test_client.post("/api/auth/logout")
+    test_client.post("/api/auth/register", json={
+        "username": tenant_user,
+        "email": f"{tenant_user}@example.com",
+        "password": "password123",
+        "role": "tenant",
+        "full_name": "Private Tenant",
+    })
+    test_client.post("/api/enquiries", json={
+        "property_id": house_id,
+        "message": "Confidential enquiry for Landlord A",
+    })
+
+    # Register Landlord B
+    test_client.post("/api/auth/logout")
+    test_client.post("/api/auth/register", json={
+        "username": landlord_b,
+        "email": f"{landlord_b}@example.com",
+        "password": "password123",
+        "role": "landlord",
+    })
+
+    # Landlord B should NOT see Landlord A's enquiry
+    b_enquiries = test_client.get("/api/landlord/enquiries").get_json()
+    assert not any(e["property_id"] == house_id for e in b_enquiries)
+
+    # Landlord A should see the enquiry
+    test_client.post("/api/auth/logout")
+    test_client.post("/api/auth/login", json={"username": landlord_a, "password": "password123"})
+    a_enquiries = test_client.get("/api/landlord/enquiries").get_json()
+    assert any(e["property_id"] == house_id for e in a_enquiries)
+
+
+@requires_postgres
+def test_input_validation_and_rejections(test_client):
+    # Invalid email in registration
+    res = test_client.post("/api/auth/register", json={
+        "username": "bad_email_user",
+        "email": "not-an-email",
+        "password": "password123",
+        "role": "tenant",
+    })
+    assert res.status_code == 400
+    assert "valid email" in res.get_json()["error"]
+
+    # Short password
+    res = test_client.post("/api/auth/register", json={
+        "username": "short_pw_user",
+        "email": "short@example.com",
+        "password": "short",
+        "role": "tenant",
+    })
+    assert res.status_code == 400
+    assert "at least 8 characters" in res.get_json()["error"]
+
+    # Invalid role
+    res = test_client.post("/api/auth/register", json={
+        "username": "invalid_role_user",
+        "email": "admin@example.com",
+        "password": "password123",
+        "role": "administrator",
+    })
+    assert res.status_code == 400
+    assert "Invalid role" in res.get_json()["error"]

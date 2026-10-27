@@ -5,6 +5,10 @@ from functools import wraps
 from pathlib import Path
 from flask import Flask, jsonify, request, send_from_directory, session
 import psycopg
+from dotenv import load_dotenv
+
+# Load environment configuration from .env if present
+load_dotenv()
 
 from src.database import (
     create_users_table,
@@ -22,10 +26,63 @@ from src.auth import (
 from src.house_search import find_houses
 
 app = Flask(__name__, static_folder="frontend", static_url_path="")
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "mimi121269reed")
-app.config["SESSION_COOKIE_HTTPONLY"] = True
-app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
-app.config["SESSION_COOKIE_SECURE"] = os.environ.get("FLASK_ENV", "production").lower() == "production"
+
+# --- APPLICATION SECURITY & SECRET-KEY CONFIGURATION ---
+
+DEV_FALLBACK_SECRET = "tamale-insecure-dev-only-secret-key-do-not-use-in-production"
+INSECURE_SECRETS = {
+    "mimi121269reed",
+    "replace-with-a-secure-random-secret-key-in-production",
+    DEV_FALLBACK_SECRET,
+}
+
+
+def init_security_config(flask_app):
+    """
+    Configure secret key and session cookies safely based on runtime environment.
+    Enforces that production environments MUST supply an independent, strong SECRET_KEY.
+    """
+    raw_env = (
+        os.environ.get("FLASK_ENV")
+        or os.environ.get("ENVIRONMENT")
+        or "production"
+    ).strip().lower()
+    is_prod = raw_env not in {"development", "dev", "test", "testing"}
+    secret = os.environ.get("SECRET_KEY")
+
+    if is_prod:
+        if not secret or secret.strip() in INSECURE_SECRETS or len(secret.strip()) < 16:
+            raise RuntimeError(
+                "FATAL: Production requires a strong SECRET_KEY environment variable (minimum 16 characters). "
+                "Please configure SECRET_KEY in your production hosting environment."
+            )
+        flask_app.config["SECRET_KEY"] = secret.strip()
+    else:
+        if not secret or secret.strip() in INSECURE_SECRETS:
+            flask_app.logger.warning(
+                "Running in non-production mode with development fallback SECRET_KEY. "
+                "Set a strong SECRET_KEY before deploying to production."
+            )
+            flask_app.config["SECRET_KEY"] = DEV_FALLBACK_SECRET
+        else:
+            flask_app.config["SECRET_KEY"] = secret.strip()
+
+    # Session cookie hardening
+    flask_app.config["SESSION_COOKIE_HTTPONLY"] = True
+    flask_app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
+    if is_prod:
+        # Default Secure=True for production HTTPS cookies
+        secure_cookie_env = os.environ.get("SESSION_COOKIE_SECURE", "true").strip().lower()
+        flask_app.config["SESSION_COOKIE_SECURE"] = secure_cookie_env not in {"false", "0", "no"}
+    else:
+        secure_cookie_env = os.environ.get("SESSION_COOKIE_SECURE", "false").strip().lower()
+        flask_app.config["SESSION_COOKIE_SECURE"] = secure_cookie_env in {"true", "1", "yes"}
+
+    return is_prod
+
+
+IS_PRODUCTION = init_security_config(app)
 
 DATABASE_READY = False
 try:
@@ -131,19 +188,14 @@ def get_houses():
                 available_only=available_only,
             )
             return jsonify(houses)
+    except (psycopg.Error, RuntimeError) as exc:
+        app.logger.error("PostgreSQL property query failed: %s", exc)
+        return jsonify({
+            "error": "Property database is temporarily unavailable. Please try again shortly."
+        }), 503
     except Exception as exc:
-        app.logger.warning("PostgreSQL query failed, falling back to pandas CSV search: %s", exc)
-        try:
-            df = find_houses(
-                budget=budget_val or 999999,
-                location=location or "",
-                bedroom=rooms_val or 0,
-                water=water or "Any",
-                bathroom=bathrooms_val or 0,
-            )
-            return jsonify(df.to_dict(orient="records"))
-        except Exception as e:
-            return jsonify({"error": f"Search failed: {e}"}), 500
+        app.logger.exception("Unexpected error while searching properties: %s", exc)
+        return jsonify({"error": "Failed to retrieve properties."}), 500
 
 
 # 2. Get Single Property Details
@@ -197,6 +249,7 @@ def api_register():
     if success:
         user = login_user(username, password)
         if user:
+            session.clear()
             session["user_id"] = user["id"]
             session["username"] = user["username"]
             session["role"] = user["role"]
@@ -239,6 +292,7 @@ def api_login():
         return jsonify({"error": "PostgreSQL is unavailable. Check the database connection and try again."}), 503
 
     if user:
+        session.clear()
         session["user_id"] = user["id"]
         session["username"] = user["username"]
         session["role"] = user["role"]
@@ -334,7 +388,7 @@ def add_landlord_property():
             digits = "".join(c for c in r["house_id"] if c.isdigit())
             if digits:
                 max_id_num = max(max_id_num, int(digits))
-        house_id = f"TAM-{str(max_id_num + 1).padStart(3, '0')}" if hasattr(str, 'padStart') else f"TAM-{max_id_num + 1:03d}"
+        house_id = f"TAM-{max_id_num + 1:03d}"
 
         # Get landlord contact info
         user = get_user_by_id(landlord_id)
@@ -509,7 +563,9 @@ def post_enquiry():
     conn = get_connection()
     with closing(conn), conn:
         prop = conn.execute("SELECT landlord_id FROM properties WHERE house_id = %s", (property_id,)).fetchone()
-        landlord_id = prop["landlord_id"] if prop else None
+        if not prop:
+            return jsonify({"error": f"Property '{property_id}' not found."}), 404
+        landlord_id = prop["landlord_id"]
 
         conn.execute("""
             INSERT INTO enquiries (property_id, tenant_id, landlord_id, tenant_name, tenant_email, message)
@@ -612,6 +668,9 @@ def add_favourite(house_id):
     tenant_id = session["user_id"]
     conn = get_connection()
     with closing(conn), conn:
+        prop = conn.execute("SELECT 1 FROM properties WHERE house_id = %s", (house_id,)).fetchone()
+        if not prop:
+            return jsonify({"error": f"Property '{house_id}' not found."}), 404
         conn.execute("""
             INSERT INTO favourites (tenant_id, house_id)
             VALUES (%s, %s)
@@ -632,9 +691,17 @@ def remove_favourite(house_id):
 
 @app.route("/health")
 def health_check():
-    if DATABASE_READY:
-        return jsonify({"status": "ok", "database": "ready"})
-    return jsonify({"status": "degraded", "database": "unavailable"}), 503
+    global DATABASE_READY
+    try:
+        conn = get_connection()
+        with closing(conn), conn:
+            conn.execute("SELECT 1")
+        DATABASE_READY = True
+        return jsonify({"status": "ok", "database": "ready"}), 200
+    except Exception as exc:
+        app.logger.warning("Database health check ping failed: %s", exc)
+        DATABASE_READY = False
+        return jsonify({"status": "degraded", "database": "unavailable"}), 503
 
 
 if __name__ == "__main__":

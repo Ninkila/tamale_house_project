@@ -27,6 +27,7 @@ htmlcov/
 data/*.db
 src/data/*.db
 src/files.zip
+src/files/
 
 # Secrets & IDE
 .streamlit/secrets.toml
