@@ -145,5 +145,6 @@ function showAuthError(errorBox, message) {
 }
 
 function redirectUserDashboard(role) {
-  window.location.href = role === 'landlord' ? 'landlord/dashboard.html' : 'tenant/dashboard.html';
+  const portal = role === 'admin' ? 'admin' : role === 'landlord' ? 'landlord' : 'tenant';
+  window.location.href = `${portal}/dashboard.html`;
 }

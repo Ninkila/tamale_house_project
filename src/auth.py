@@ -5,7 +5,7 @@ from contextlib import closing
 
 import psycopg
 
-from src.database import get_connection
+from src.database import configured_admin_emails, get_connection
 
 ITERATIONS = 600_000
 VALID_ROLES = ("landlord", "tenant")
@@ -46,6 +46,8 @@ def register_user(username, email, password, role="tenant", full_name=None, phon
     if not username or not email or len(password) < 8:
         return False
 
+    stored_role = "admin" if email in configured_admin_emails() else role
+
     connection = get_connection()
     try:
         exists = connection.execute(
@@ -60,7 +62,7 @@ def register_user(username, email, password, role="tenant", full_name=None, phon
             INSERT INTO users (username, email, password_hash, role, full_name, phone)
             VALUES (%s, %s, %s, %s, %s, %s)
             """,
-            (username, email, hash_password(password), role, (full_name or username).strip(), (phone or "0241234567").strip()),
+            (username, email, hash_password(password), stored_role, (full_name or username).strip(), (phone or "0241234567").strip()),
         )
         connection.commit()
         return True

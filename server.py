@@ -1,9 +1,10 @@
 import os
 import re
+from uuid import uuid4
 from contextlib import closing
 from functools import wraps
 from pathlib import Path
-from flask import Flask, jsonify, request, send_from_directory, session
+from flask import Flask, g, jsonify, request, send_from_directory, session
 import psycopg
 from dotenv import load_dotenv
 
@@ -14,7 +15,9 @@ from src.database import (
     create_users_table,
     get_connection,
     get_property_by_id,
+    get_traffic_analytics,
     query_properties,
+    record_traffic_event,
     format_property_dict,
 )
 from src.auth import (
@@ -31,7 +34,7 @@ app = Flask(__name__, static_folder="frontend", static_url_path="")
 
 DEV_FALLBACK_SECRET = "tamale-insecure-dev-only-secret-key-do-not-use-in-production"
 INSECURE_SECRETS = {
-    "mimi121269reed",
+    "random-secret-key",
     "replace-with-a-secure-random-secret-key-in-production",
     DEV_FALLBACK_SECRET,
 }
@@ -105,7 +108,43 @@ def ensure_auth_database():
         return jsonify({
             "error": "PostgreSQL is unavailable. Set DATABASE_URL in the project .env file and start the database."
         }), 503
+
+
+@app.before_request
+def record_page_view():
+    """Record HTML page views without logging IP addresses or request contents."""
+    if not DATABASE_READY or request.method != "GET":
+        return None
+    path = request.path
+    if path != "/" and not path.endswith(".html"):
+        return None
+
+    visitor_id = request.cookies.get("thm_visitor")
+    if not visitor_id:
+        visitor_id = uuid4().hex
+        g.new_traffic_visitor = visitor_id
+
+    try:
+        with closing(get_connection()) as connection, connection:
+            record_traffic_event(connection, visitor_id, path)
+    except (psycopg.Error, RuntimeError) as exc:
+        app.logger.warning("Traffic event was not recorded: %s", exc)
     return None
+
+
+@app.after_request
+def set_traffic_visitor_cookie(response):
+    visitor_id = getattr(g, "new_traffic_visitor", None)
+    if visitor_id:
+        response.set_cookie(
+            "thm_visitor",
+            visitor_id,
+            max_age=60 * 60 * 24 * 365,
+            httponly=True,
+            samesite="Lax",
+            secure=app.config["SESSION_COOKIE_SECURE"],
+        )
+    return response
 
 
 # --- AUTHORIZATION DECORATORS ---
@@ -340,6 +379,19 @@ def api_update_profile():
         session["full_name"] = updated["full_name"]
         return jsonify({"message": "Profile updated successfully", "user": updated})
     return jsonify({"error": "Failed to update profile."}), 400
+
+
+# 3b. Administrator analytics
+@app.route("/api/admin/analytics", methods=["GET"])
+@role_required("admin")
+def api_admin_analytics():
+    try:
+        with closing(get_connection()) as connection, connection:
+            analytics = get_traffic_analytics(connection)
+        return jsonify(analytics)
+    except (psycopg.Error, RuntimeError) as exc:
+        app.logger.exception("Failed to load administrator analytics: %s", exc)
+        return jsonify({"error": "Analytics are temporarily unavailable."}), 503
 
 
 # 4. Landlord Property Management

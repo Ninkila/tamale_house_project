@@ -115,7 +115,7 @@ async function logoutUser() {
     await fetch('/api/auth/logout', { method: 'POST' });
   } catch (e) {}
   localStorage.removeItem(CURRENT_USER_KEY);
-  const isDashboard = window.location.pathname.includes('/landlord/') || window.location.pathname.includes('/tenant/');
+  const isDashboard = window.location.pathname.includes('/landlord/') || window.location.pathname.includes('/tenant/') || window.location.pathname.includes('/admin/');
   if (isDashboard) {
     window.location.href = '../login.html';
   } else {
@@ -130,10 +130,9 @@ function updateUserNavUI() {
   if (!navActions) return;
 
   if (user) {
-    const isInsidePortal = window.location.pathname.includes('/landlord/') || window.location.pathname.includes('/tenant/');
-    const dashboardPath = user.role === 'landlord'
-      ? (isInsidePortal ? 'dashboard.html' : 'landlord/dashboard.html')
-      : (isInsidePortal ? 'dashboard.html' : 'tenant/dashboard.html');
+    const isInsidePortal = window.location.pathname.includes('/landlord/') || window.location.pathname.includes('/tenant/') || window.location.pathname.includes('/admin/');
+    const portal = user.role === 'admin' ? 'admin' : user.role === 'landlord' ? 'landlord' : 'tenant';
+    const dashboardPath = isInsidePortal ? 'dashboard.html' : `${portal}/dashboard.html`;
 
     navActions.innerHTML = `
       <a href="${dashboardPath}" class="btn btn-outline btn-sm">
@@ -152,7 +151,7 @@ function handleContactClick(e) {
     e.preventDefault();
     e.stopPropagation();
     alert('Account Required: You must create an account or log in to contact landlords or arrange viewings on Tamale House Market.');
-    const isDashboard = window.location.pathname.includes('/landlord/') || window.location.pathname.includes('/tenant/');
+    const isDashboard = window.location.pathname.includes('/landlord/') || window.location.pathname.includes('/tenant/') || window.location.pathname.includes('/admin/');
     window.location.href = isDashboard ? '../login.html' : 'login.html';
     return false;
   }
@@ -211,7 +210,7 @@ async function toggleFavourite(houseId) {
   const user = getCurrentUser();
   if (!user) {
     alert('Account Required: You must create an account or log in to save properties to your favourites list.');
-    const isDashboard = window.location.pathname.includes('/landlord/') || window.location.pathname.includes('/tenant/');
+    const isDashboard = window.location.pathname.includes('/landlord/') || window.location.pathname.includes('/tenant/') || window.location.pathname.includes('/admin/');
     window.location.href = isDashboard ? '../login.html' : 'login.html';
     return false;
   }

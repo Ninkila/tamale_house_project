@@ -40,3 +40,7 @@ pg_restore -U tamale_user -d tamale_house_market -v tamale_backup.dump
 ### Health Check
 
 The application exposes `GET /health` which actively executes `SELECT 1` against PostgreSQL to confirm live database connectivity. If the database connection fails, it returns HTTP 503 without leaking internal credentials.
+
+### Administrator analytics
+
+Set `ADMIN_EMAILS` in `.env` to one or more comma-separated addresses. An account registered with a listed address is assigned the administrator role by the server. Open `/admin/dashboard.html` after signing in to view protected traffic, listing, enquiry, and account metrics. The public registration form never offers an administrator role.

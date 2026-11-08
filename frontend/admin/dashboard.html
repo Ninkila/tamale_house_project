@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administrator Analytics | Tamale House Market</title>
+  <link rel="stylesheet" href="../css/styles.css">
+  <link rel="stylesheet" href="../css/responsive.css">
+  <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+  <header class="navbar">
+    <div class="container">
+      <a href="../index.html" class="nav-brand" aria-label="Tamale House Market home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Tamale House <span class="gold">Market</span></span>
+      </a>
+      <div class="nav-actions">
+        <span style="color:var(--accent); font-size:0.9rem; font-weight:700;">ADMIN PORTAL</span>
+        <button onclick="logoutUser()" class="btn btn-outline btn-sm">Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="dashboard-layout">
+    <aside class="sidebar admin-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-user">
+          <div class="user-avatar admin-avatar">AD</div>
+          <div class="user-info">
+            <h4 id="admin-name">Administrator</h4>
+            <span>Platform analytics</span>
+          </div>
+        </div>
+      </div>
+      <nav class="sidebar-menu" aria-label="Administrator navigation">
+        <a href="dashboard.html" class="sidebar-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Analytics overview
+        </a>
+        <a href="../houses.html" class="sidebar-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2 2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          View marketplace
+        </a>
+      </nav>
+    </aside>
+
+    <main class="dashboard-main">
+      <div class="dashboard-header dashboard-header-stack">
+        <div>
+          <p class="eyebrow">Last 30 days</p>
+          <h1 class="dashboard-title">Marketplace performance</h1>
+          <p class="dashboard-subtitle">Track traffic, audience growth, listings, and enquiries in one place.</p>
+        </div>
+        <button class="btn btn-outline" id="refresh-analytics" type="button">Refresh data</button>
+      </div>
+
+      <div class="stats-grid admin-stats-grid" aria-live="polite">
+        <div class="stat-card"><div class="stat-info"><p>Page views</p><h3 id="metric-page-views">—</h3></div><div class="stat-icon"><span>↗</span></div></div>
+        <div class="stat-card"><div class="stat-info"><p>Unique visitors</p><h3 id="metric-visitors">—</h3></div><div class="stat-icon gold"><span>◎</span></div></div>
+        <div class="stat-card"><div class="stat-info"><p>Active listings</p><h3 id="metric-listings">—</h3></div><div class="stat-icon green"><span>⌂</span></div></div>
+        <div class="stat-card"><div class="stat-info"><p>Enquiries</p><h3 id="metric-enquiries">—</h3></div><div class="stat-icon"><span>✦</span></div></div>
+      </div>
+
+      <section class="analytics-grid">
+        <article class="table-card chart-card">
+          <div class="table-card-header">
+            <div><h3>Visits this week</h3><p class="card-caption">Daily page views</p></div>
+            <span class="metric-chip" id="metric-today">Today: —</span>
+          </div>
+          <div class="traffic-chart" id="traffic-chart" aria-label="Daily page view chart"></div>
+        </article>
+
+        <article class="table-card insight-card">
+          <div class="table-card-header"><div><h3>Audience mix</h3><p class="card-caption">Registered accounts by role</p></div></div>
+          <div class="role-list" id="role-list"></div>
+        </article>
+      </section>
+
+      <section class="analytics-grid analytics-grid-lower">
+        <article class="table-card">
+          <div class="table-card-header"><div><h3>Popular pages</h3><p class="card-caption">Most viewed paths in the last 30 days</p></div></div>
+          <div class="top-pages-list" id="top-pages-list"></div>
+        </article>
+        <article class="table-card">
+          <div class="table-card-header"><div><h3>Recent accounts</h3><p class="card-caption">Newest marketplace members</p></div></div>
+          <div class="table-responsive"><table class="data-table"><thead><tr><th>Member</th><th>Role</th><th>Joined</th></tr></thead><tbody id="recent-users"></tbody></table></div>
+        </article>
+      </section>
+
+      <p class="analytics-note">Traffic uses a random first-party visitor ID and records page paths only. IP addresses and form contents are not stored.</p>
+    </main>
+  </div>
+  <script src="../js/main.js"></script>
+  <script src="../js/admin.js"></script>
+</body>
+</html>
